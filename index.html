@@ -1,0 +1,605 @@
+<title>DRIPT Black Friday</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="DRIPT — Black Friday, du 26 au 30 novembre. Hoodies épais, zips et joggings en petite série.">
+<meta property="og:title" content="DRIPT — Black Friday">
+<meta property="og:description" content="Hoodies épais, zips et joggings. Du jeudi 26 novembre 18 h au lundi 30 novembre.">
+<meta property="og:image" content="img/gate.jpg">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111'/%3E%3Ctext x='5' y='23' font-family='Arial Black,Arial' font-weight='900' font-size='19' fill='%23fff'%3ED%3C/text%3E%3Ccircle cx='25' cy='21' r='2.6' fill='%23d4271d'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="catalog.js"></script>
+<script>
+/* ===== À MODIFIER ===== */
+const INSTAGRAM = "https://instagram.com/";   // ton compte
+const PASSWORD  = "dript";                     // mot de passe pour voir la boutique avant l'ouverture (aperçu, pas une vraie sécurité)
+</script>
+
+<style>
+/* Layout: Shopify-style password gate (full-bleed photo, one message, e-mail signup), then a quiet editorial store: centered logo, full-bleed hero, product grid, slide-in product sheet and cart. Monochrome; red only on sale prices and the logo dot. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --panel:#f2f2f0; --ink:#111111; --ink-2:#555555; --muted:#8a8a8a; --line:#e6e6e3; --red:#d4271d;
+  --display:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --gut:max(20px, env(safe-area-inset-left, 0px)); --gutr:max(20px, env(safe-area-inset-right, 0px));
+  --ease:cubic-bezier(.22,.7,.2,1);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:90;background:var(--bg)}
+body.locked::before{background:#111}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.wrap{max-width:1440px;margin:0 auto;padding-left:var(--gut);padding-right:var(--gutr)}
+.small{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase}
+.logo{display:inline-flex;align-items:baseline;gap:2px;font-weight:900;font-size:24px;line-height:1;letter-spacing:-.05em}
+.logo i{display:block;width:6px;height:6px;border-radius:50%;background:var(--red)}
+.ulink{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:0 28px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s,opacity .2s}
+.btn:hover{background:#fff;color:var(--ink)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.light{background:#fff;color:var(--ink);border-color:#fff}
+.btn.light:hover{background:transparent;color:#fff}
+.price{display:inline-flex;gap:8px;align-items:baseline;font-variant-numeric:tabular-nums}
+.price .now{color:var(--red)}
+.price s{color:var(--muted)}
+
+/* ================= GATE ================= */
+.gate{position:fixed;inset:0;z-index:80;background:#111;color:#fff;display:flex;flex-direction:column;overflow-y:auto}
+.gate-bg{position:fixed;inset:0;z-index:-1}
+.gate-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 28%}
+.gate-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.25) 40%,rgba(0,0,0,.6))}
+.gate header{display:flex;justify-content:center;padding:calc(28px + env(safe-area-inset-top,0px)) var(--gutr) 0 var(--gut)}
+.gate .logo{font-size:30px}
+.gate main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:48px var(--gutr) 48px var(--gut)}
+.gate h1{margin:0;font-weight:900;font-size:clamp(56px,13vw,180px);line-height:.85;letter-spacing:-.05em}
+.gate .when{margin:0;font-size:17px;font-weight:500}
+.gate form{display:flex;width:min(440px,100%);border-bottom:1px solid rgba(255,255,255,.7)}
+.gate input{flex:1;min-width:0;background:transparent;border:0;padding:14px 2px;color:#fff;font-size:15px;outline:none}
+.gate input::placeholder{color:rgba(255,255,255,.7)}
+.gate form button{background:none;border:0;color:#fff;cursor:pointer;padding:0 4px}
+.gate .msg{min-height:20px;margin:0;font-size:13.5px;opacity:.9}
+.gate footer{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:0 var(--gutr) calc(26px + env(safe-area-inset-bottom,0px)) var(--gut);font-size:13px}
+.pw{display:flex;flex-direction:column;align-items:center;gap:10px}
+@media (min-width:900px){
+  .gate-bg{left:50%}
+  .gate-bg img{object-position:50% 20%}
+  .gate-bg::after{background:linear-gradient(90deg,rgba(17,17,17,.25),rgba(0,0,0,0) 30%)}
+  .gate header,.gate main{padding-right:calc(50% + 32px)}
+  .gate footer{padding-right:calc(50% + 32px)}
+  .gate h1{font-size:clamp(72px,9.5vw,150px)}
+}
+.pw form{width:min(300px,100%)}
+
+/* ================= STORE ================= */
+.announce{background:var(--ink);color:#fff;text-align:center}
+.announce .wrap{padding-block:9px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:62px;gap:16px}
+.top nav{display:flex;gap:26px}
+.top nav a,.cart-btn{font-size:13.5px;color:var(--ink-2);transition:color .2s}
+.top nav a:hover,.cart-btn:hover{color:var(--ink)}
+.cart-btn{justify-self:end;background:none;border:0;cursor:pointer;padding:6px 0}
+.cart-btn b{color:var(--ink);font-weight:600}
+
+.hero{position:relative;display:grid;grid-template-columns:1fr 1fr;height:min(86vh,860px);min-height:520px;overflow:hidden;background:var(--panel)}
+.hero img{width:100%;height:100%;object-fit:cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.5))}
+.hero-text{position:absolute;left:0;right:0;bottom:0;z-index:2;color:#fff}
+.hero-text .wrap{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;padding-block:0 40px}
+.hero h1{margin:0;font-weight:900;font-size:clamp(64px,12vw,200px);line-height:.82;letter-spacing:-.055em}
+.hero-side{display:flex;flex-direction:column;gap:16px;align-items:flex-start;max-width:340px;padding-bottom:6px}
+.hero-side p{margin:0;font-size:16px;line-height:1.45}
+
+section{padding-block:72px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+.sec-head h2{margin:0;font-weight:800;font-size:22px;letter-spacing:-.02em}
+.sec-head span{color:var(--muted);font-size:13.5px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px 16px}
+.tile{display:flex;flex-direction:column;gap:14px;cursor:pointer;background:none;border:0;padding:0;text-align:left;min-width:0}
+.tile .ph{position:relative;aspect-ratio:4/5;background:var(--panel);overflow:hidden}
+.tile .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .6s var(--ease),transform 1.2s var(--ease)}
+.tile .ph img.b{opacity:0}
+.tile:hover .ph img.b{opacity:1}
+.tile:hover .ph img{transform:scale(1.02)}
+.tile .soldtag{position:absolute;left:12px;top:12px;background:#fff;padding:4px 8px}
+.tile .meta{display:flex;justify-content:space-between;gap:12px;font-size:14.5px}
+.tile .meta b{font-weight:500}
+.tile .dots{display:flex;gap:6px;margin-top:-6px}
+.tile .dots i{width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+
+.story{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--panel)}
+.story .ph{aspect-ratio:1;overflow:hidden}
+.story .ph img{width:100%;height:100%;object-fit:contain}
+.story .txt{display:flex;flex-direction:column;justify-content:center;gap:18px;padding:56px max(32px,6vw)}
+.story h2{margin:0;font-weight:900;font-size:clamp(34px,4vw,56px);line-height:.95;letter-spacing:-.04em}
+.story p{margin:0;max-width:44ch;color:var(--ink-2);font-size:16px}
+
+.infos{border-block:1px solid var(--line);padding-block:0}
+.infos .wrap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.infos div{padding:26px 20px 26px 0;display:flex;flex-direction:column;gap:2px}
+.infos b{font-weight:600;font-size:14.5px}
+.infos span{color:var(--ink-2);font-size:13.5px}
+
+.faq{display:grid;grid-template-columns:1fr 2fr;gap:40px}
+details{border-top:1px solid var(--line)}
+details:last-child{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;padding-block:18px;font-weight:500;font-size:15.5px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-weight:400;color:var(--muted)}
+details[open] summary::after{content:"–"}
+details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
+
+.foot{background:var(--ink);color:#fff;padding-block:56px 40px}
+.foot .wrap{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:40px}
+.foot h3{margin:0 0 12px;font-weight:600;font-size:15px}
+.foot p{margin:0 0 16px;color:rgba(255,255,255,.7);font-size:14px;max-width:40ch}
+.foot form{display:flex;border-bottom:1px solid rgba(255,255,255,.5);max-width:380px}
+.foot input{flex:1;min-width:0;background:transparent;border:0;padding:12px 0;color:#fff;outline:none}
+.foot input::placeholder{color:rgba(255,255,255,.55)}
+.foot form button{background:none;border:0;color:#fff;cursor:pointer}
+.foot ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px;color:rgba(255,255,255,.75)}
+.foot ul a:hover{color:#fff}
+.foot .legal{grid-column:1/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:28px;margin-top:8px;border-top:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-size:12.5px}
+.fmsg{min-height:20px;margin-top:10px;font-size:13px;color:rgba(255,255,255,.8)}
+
+.thanks{background:var(--panel);text-align:center;padding-block:28px}
+.thanks b{display:block;font-size:18px;margin-bottom:4px}
+
+/* ================= SHEETS ================= */
+.scrim{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .35s var(--ease)}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;top:0;right:0;bottom:0;z-index:70;width:min(520px,100%);background:#fff;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .45s var(--ease);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet.on{transform:none}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;height:62px;padding:0 max(24px,env(safe-area-inset-right,0px)) 0 24px;border-bottom:1px solid var(--line);flex:none}
+.sheet-head b{font-weight:600}
+.x{background:none;border:0;cursor:pointer;width:40px;height:40px;margin-right:-10px;display:grid;place-items:center}
+.x svg{width:18px;height:18px}
+.sheet-body{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.sheet-foot{flex:none;border-top:1px solid var(--line);padding:18px 24px;display:flex;flex-direction:column;gap:12px}
+
+.gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;background:var(--panel)}
+.gallery img{flex:0 0 100%;aspect-ratio:4/5;object-fit:cover;scroll-snap-align:start}
+.gdots{display:flex;justify-content:center;gap:6px;padding-top:12px}
+.gdots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.gdots i.on{background:var(--ink)}
+.pinfo{padding:20px 24px 28px;display:flex;flex-direction:column;gap:18px}
+.pinfo h2{margin:0;font-weight:800;font-size:24px;letter-spacing:-.02em;line-height:1.1}
+.pinfo .price{font-size:17px}
+.pinfo p{margin:0;color:var(--ink-2)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt-l{display:flex;justify-content:space-between;font-size:13.5px}
+.opt-l span{color:var(--ink-2)}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-width:52px;height:44px;padding:0 14px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.chip:hover:not(:disabled){border-color:var(--ink)}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.chip:disabled{color:#c7c7c7;cursor:not-allowed;background:linear-gradient(to top right,transparent calc(50% - .5px),#dcdcdc 50%,transparent calc(50% + .5px)),#fafafa}
+.chip.col{display:inline-flex;align-items:center;gap:8px;text-transform:capitalize}
+.chip .sw{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+.chip[aria-pressed="true"] .sw{box-shadow:0 0 0 1.5px #fff}
+.part{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:12px}
+.part b{font-weight:600;font-size:14.5px}
+.note{font-size:13px;color:var(--muted)}
+
+.line{display:grid;grid-template-columns:84px 1fr auto;gap:14px;padding:18px 24px;border-bottom:1px solid var(--line)}
+.line img{width:84px;aspect-ratio:4/5;object-fit:cover;background:var(--panel)}
+.line .n{font-weight:500}
+.line .d{font-size:13px;color:var(--ink-2)}
+.qty{display:inline-flex;align-items:center;border:1px solid var(--line);margin-top:10px}
+.qty button{width:32px;height:32px;background:none;border:0;cursor:pointer}
+.qty span{min-width:24px;text-align:center;font-variant-numeric:tabular-nums}
+.line .r{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;font-variant-numeric:tabular-nums}
+.rm{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12.5px;text-decoration:underline;text-underline-offset:3px}
+.empty{padding:48px 24px;text-align:center;color:var(--ink-2);display:flex;flex-direction:column;gap:18px;align-items:center}
+.sum{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.sum.t{color:var(--ink);font-weight:600;font-size:16px}
+.err{font-size:13px;color:var(--red);min-height:18px}
+.pay{font-size:12px;color:var(--muted);text-align:center}
+
+.legal-txt{padding:24px;display:flex;flex-direction:column;gap:14px;color:var(--ink-2);font-size:14.5px}
+.legal-txt h3{margin:10px 0 0;color:var(--ink);font-size:15px;font-weight:600}
+.legal-txt p{margin:0}
+.todo{background:#fff6d6;color:#6b5400;padding:1px 4px}
+.guide-btn{align-self:flex-start;font-size:13px}
+.size-table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.size-table th,.size-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+.size-table th{font-weight:600;background:var(--panel)}
+.bundle-note{font-size:13.5px;color:var(--ink-2)}
+@media (max-width:900px){
+  .top .wrap{grid-template-columns:auto 1fr auto}
+  .top nav{display:none}
+  .top .logo{grid-column:1}
+  .cart-btn{grid-column:3}
+  .hero{grid-template-columns:1fr;height:auto;min-height:0;aspect-ratio:4/5}
+  .hero img:nth-child(2){display:none}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 12px}
+  .story{grid-template-columns:1fr}
+  .infos .wrap{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .faq{grid-template-columns:1fr;gap:16px}
+  .foot .wrap{grid-template-columns:1fr 1fr}
+  .foot .wrap > div:first-child{grid-column:1/-1}
+}
+@media (max-width:560px){
+  .hero-text .wrap{padding-block:0 24px}
+  .hero-side{max-width:none}
+  section{padding-block:52px}
+  .tile .meta{flex-direction:column;gap:2px}
+  .story .txt{padding:40px var(--gutr) 44px var(--gut)}
+  .gate footer{justify-content:center;text-align:center}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
+</style>
+
+<!-- ============ PAGE D'ACCUEIL VERROUILLÉE ============ -->
+<div class="gate" id="gate" hidden>
+  <div class="gate-bg"><img src="img/gate.jpg" alt=""></div>
+  <header><span class="logo">DRIPT<i></i></span></header>
+  <main>
+    <span class="small" id="gate-kicker">Bientôt</span>
+    <h1>Black<br>Friday</h1>
+    <p class="when" id="gate-when">Jeudi 26 novembre, 18 h.</p>
+    <form id="gate-form" novalidate>
+      <label class="small" for="gate-email" style="position:absolute;left:-9999px">E-mail</label>
+      <input id="gate-email" type="email" placeholder="Ton e-mail pour être prévenu" autocomplete="email" required>
+      <button type="submit" class="small">M'avertir</button>
+    </form>
+    <p class="msg" id="gate-msg" role="status"></p>
+  </main>
+  <footer>
+    <a class="js-insta ulink" href="#" target="_blank" rel="noopener">Instagram</a>
+    <div class="pw">
+      <button class="ulink" id="pw-toggle" type="button">Entrer avec le mot de passe</button>
+      <form id="pw-form" hidden>
+        <label for="pw-input" style="position:absolute;left:-9999px">Mot de passe</label>
+        <input id="pw-input" type="password" placeholder="Mot de passe" autocomplete="current-password">
+        <button type="submit" class="small">Entrer</button>
+      </form>
+      <p class="msg" id="pw-msg" role="status" style="min-height:0"></p>
+    </div>
+  </footer>
+</div>
+
+<!-- ============ BOUTIQUE ============ -->
+<div id="store">
+  <div class="announce small"><div class="wrap">Black Friday · Hoodie épais 35 € · Livraison offerte dès 2 pièces</div></div>
+  <header class="top">
+    <div class="wrap">
+      <nav><a href="#boutique">Boutique</a><a href="#ensembles">Ensembles</a><a href="#faq">Aide</a></nav>
+      <a class="logo" href="#top" aria-label="DRIPT — accueil">DRIPT<i></i></a>
+      <button class="cart-btn" id="cart-btn" type="button">Panier (<b id="cart-count">0</b>)</button>
+    </div>
+  </header>
+
+  <div class="thanks" id="thanks" hidden><div class="wrap"><b>Merci pour ta commande.</b>Tu vas recevoir un e-mail de confirmation de Stripe. On prépare ton colis.</div></div>
+
+  <div class="hero" id="top">
+    <img src="img/room-tall.jpg" alt="Deux personnes en hoodie épais DRIPT noir" fetchpriority="high">
+    <img src="img/room-girl.jpg" alt="Hoodie épais DRIPT noir vu de dos, étiquette rouge">
+    <div class="hero-text">
+      <div class="wrap">
+        <h1>Black<br>Friday</h1>
+        <div class="hero-side">
+          <p id="hero-line">Hoodie épais 35 €, zip et jogging 25 €. Livraison offerte dès 2 pièces. Jusqu'au lundi 30 novembre.</p>
+          <a class="btn light" href="#boutique">Découvrir</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="boutique">
+    <div class="wrap">
+      <div class="sec-head"><h2>Boutique</h2><span id="count-p"></span></div>
+      <div class="grid" id="grid-p"></div>
+    </div>
+  </section>
+
+  <section class="story-wrap" style="padding-block:0">
+    <div class="story">
+      <div class="ph"><img src="img/hoodie-back.jpg" alt="Dos du hoodie épais DRIPT, coutures ondulées et étiquette rouge" loading="lazy"></div>
+      <div class="txt">
+        <span class="small" style="color:var(--muted)">Le hoodie épais</span>
+        <h2>Lourd, ample, fait pour durer.</h2>
+        <p>Molleton épais, capuche doublée, coutures ondulées devant et derrière, étiquette rouge au dos. Produit en petite série : quand il n'y en a plus, il n'y en a plus.</p>
+        <button class="btn" type="button" style="align-self:flex-start" data-open="hoodie">Voir le hoodie</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="ensembles">
+    <div class="wrap">
+      <div class="sec-head"><h2>Ensembles</h2><span>Une taille au choix pour chaque pièce</span></div>
+      <div class="grid" id="grid-b"></div>
+    </div>
+  </section>
+
+  <div class="infos">
+    <div class="wrap">
+      <div><b>Livraison offerte dès 2 pièces</b><span>Sinon 5 €, suivie, 2 à 5 jours ouvrés</span></div>
+      <div><b>Expédition sous 48 h</b><span>Depuis la France</span></div>
+      <div><b>Retours 14 jours</b><span>Pièce non portée, avec étiquette</span></div>
+      <div><b>Paiement sécurisé</b><span>CB, Apple Pay, Google Pay via Stripe</span></div>
+    </div>
+  </div>
+
+  <section id="faq">
+    <div class="wrap faq">
+      <div class="sec-head" style="margin:0"><h2>Aide</h2></div>
+      <div>
+        <details><summary>Jusqu'à quand dure le Black Friday ?</summary><p>Du jeudi 26 novembre à 18 h au lundi 30 novembre à 23 h 59, ou jusqu'à épuisement du stock. Les quantités sont limitées et il n'y aura pas de réassort.</p></details>
+        <details><summary>Quelle taille choisir ?</summary><p>Toutes les pièces sont en coupe ample et unisexe. Prends ta taille habituelle pour un porté oversize, une taille en dessous pour un porté plus près du corps. En cas de doute, écris-nous sur Instagram.</p></details>
+        <details><summary>Quels sont les délais de livraison ?</summary><p>Les commandes partent sous 48 h ouvrées en envoi suivi, livrées en 2 à 5 jours ouvrés en France. La livraison coûte 5 €, et elle est offerte dès 2 pièces achetées (lots compris).</p></details>
+        <details><summary>Comment payer ?</summary><p>Le paiement se fait sur une page sécurisée Stripe : carte bancaire, Apple Pay ou Google Pay. Tu reçois un reçu par e-mail.</p></details>
+        <details><summary>Puis-je retourner un article ?</summary><p>Oui, sous 14 jours après réception, pour une pièce non portée avec son étiquette. Contacte-nous sur Instagram pour organiser le retour.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div>
+        <span class="logo" style="font-size:28px">DRIPT<i></i></span>
+        <p style="margin-top:16px">Les nouveautés et les prochains drops, par e-mail.</p>
+        <form id="foot-form" novalidate>
+          <label for="foot-email" style="position:absolute;left:-9999px">E-mail</label>
+          <input id="foot-email" type="email" placeholder="Ton e-mail" autocomplete="email">
+          <button class="small" type="submit">OK</button>
+        </form>
+        <div class="fmsg" id="foot-msg" role="status"></div>
+      </div>
+      <div><h3>Boutique</h3><ul><li><a href="#boutique">Toutes les pièces</a></li><li><a href="#ensembles">Ensembles</a></li><li><a href="#faq">Aide</a></li></ul></div>
+      <div><h3>DRIPT</h3><ul><li><a class="js-insta" href="#" target="_blank" rel="noopener">Instagram</a></li><li><a href="#mentions" data-legal="mentions">Mentions légales</a></li><li><a href="#cgv" data-legal="cgv">Conditions de vente</a></li><li><a href="#retours" data-legal="retours">Livraison et retours</a></li></ul></div>
+      <div class="legal"><span>© 2026 DRIPT</span><span>Paiement sécurisé par Stripe</span></div>
+    </div>
+  </footer>
+</div>
+
+<!-- ============ PANNEAUX ============ -->
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="psheet" aria-label="Produit" aria-hidden="true">
+  <div class="sheet-head"><b id="ps-title">Produit</b><button class="x js-close" type="button" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
+  <div class="sheet-body" id="ps-body"></div>
+  <div class="sheet-foot"><div class="err" id="ps-err"></div><button class="btn" id="ps-add" type="button">Ajouter au panier</button></div>
+</aside>
+<aside class="sheet" id="lsheet" aria-label="Informations" aria-hidden="true">
+  <div class="sheet-head"><b id="l-title">Informations</b><button class="x js-close" type="button" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
+  <div class="sheet-body"><div class="legal-txt" id="l-body"></div></div>
+</aside>
+<aside class="sheet" id="csheet" aria-label="Panier" aria-hidden="true">
+  <div class="sheet-head"><b>Panier</b><button class="x js-close" type="button" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
+  <div class="sheet-body" id="c-body"></div>
+  <div class="sheet-foot" id="c-foot">
+    <div class="sum"><span>Sous-total</span><span id="c-sub"></span></div>
+    <div class="sum"><span>Livraison</span><span id="c-ship"></span></div>
+    <div class="note" id="c-hint"></div>
+    <div class="sum t"><span>Total</span><span id="c-tot"></span></div>
+    <div class="err" id="c-err" role="status"></div>
+    <button class="btn" id="c-pay" type="button">Paiement</button>
+    <div class="pay">Paiement sécurisé par Stripe · CB, Apple Pay, Google Pay</div>
+  </div>
+</aside>
+
+<script>
+(function(){
+  const C = window.CATALOG, SIZES = ["XS","S","M","L","XL"], SW = { noir:"#141414", gris:"#a7a7a9" };
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const eur = c => (c/100).toLocaleString("fr-FR",{minimumFractionDigits: c%100?2:0, maximumFractionDigits:2}) + " €";
+  const P = Object.fromEntries(C.products.map(p=>[p.id,p])), B = Object.fromEntries(C.bundles.map(b=>[b.id,b]));
+  const left = (p,c) => Object.values(p.stock[c]).reduce((a,b)=>a+b,0);
+  const total = p => Object.keys(p.stock).reduce((a,c)=>a+left(p,c),0);
+  const store = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} } };
+  $$(".js-insta").forEach(a => a.href = INSTAGRAM);
+
+  /* ---------- gate ---------- */
+  const thanks = /commande=merci/.test(location.search);
+  const now = Date.now(), start = new Date(C.dropDate).getTime(), end = new Date(C.dropEnd || "2100-01-01").getTime();
+  const open = (now >= start && now <= end) || store.get("dript-unlock") === "1" || thanks;
+  const gate = $("#gate");
+  if (now > end){ $("#gate-kicker").textContent = "Terminé"; $("#gate-when").textContent = "Le Black Friday est terminé. Merci à tous. Inscris-toi pour le prochain drop."; }
+  if (!open){ gate.hidden = false; document.body.classList.add("locked"); document.body.style.overflow = "hidden"; }
+  /* Si la page reste ouverte jusqu'à 18 h, la boutique s'ouvre toute seule. */
+  if (!open && now < start && start - now < 864e5) setTimeout(() => location.reload(), start - now + 1500);
+  $("#pw-toggle").onclick = () => { $("#pw-form").hidden = false; $("#pw-toggle").hidden = true; $("#pw-input").focus(); };
+  $("#pw-form").onsubmit = e => {
+    e.preventDefault();
+    if ($("#pw-input").value.trim().toLowerCase() === PASSWORD.toLowerCase()){
+      store.set("dript-unlock","1"); gate.hidden = true; document.body.classList.remove("locked"); document.body.style.overflow = "";
+    } else $("#pw-msg").textContent = "Mot de passe incorrect.";
+  };
+
+  async function subscribe(input, msg){
+    const email = input.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ msg.textContent = "Entre une adresse e-mail valide."; return; }
+    msg.textContent = "Envoi…";
+    try{
+      const r = await fetch("/api/subscribe",{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ email }) });
+      const d = await r.json().catch(()=>({}));
+      if (r.ok){ msg.textContent = "C'est noté, tu seras prévenu."; input.value = ""; }
+      else msg.textContent = d.error || "Inscription impossible pour le moment.";
+    }catch(e){ msg.textContent = "L'inscription fonctionnera une fois le site en ligne."; }
+  }
+  $("#gate-form").onsubmit = e => { e.preventDefault(); subscribe($("#gate-email"), $("#gate-msg")); };
+  $("#foot-form").onsubmit = e => { e.preventDefault(); subscribe($("#foot-email"), $("#foot-msg")); };
+
+  let current = null;   // { kind, id, picks:[{color,size}] }
+  /* ---------- grids ---------- */
+  const priceHTML = (now, was) => `<span class="price"><span class="now">${eur(now)}</span>${was?`<s>${eur(was)}</s>`:""}</span>`;
+  const unitSum = b => b.parts.reduce((a,pid)=>a + P[pid].price, 0);
+  const bundleLeft = b => b.parts.every(pid => total(P[pid]) > 0);
+  function renderGrids(){
+    $("#grid-p").innerHTML = C.products.map(p => {
+      const sold = total(p) === 0;
+      return `<button class="tile" type="button" data-open="${p.id}">
+        <div class="ph"><img src="${p.images[0]}" alt="${p.name}" loading="lazy">${p.images[1]?`<img class="b" src="${p.images[1]}" alt="" loading="lazy">`:""}${sold?`<span class="soldtag small">Épuisé</span>`:""}</div>
+        <div class="meta"><b>${p.name}</b>${C.priceFor(p) < p.price ? `<span class="price"><span class="now">Dès ${eur(C.priceFor(p))}</span></span>` : priceHTML(p.price,p.compareAt)}</div>
+        <div class="dots">${Object.keys(p.stock).filter(c=>left(p,c)>0).map(c=>`<i style="background:${SW[c]}" title="${c}"></i>`).join("")}</div>
+      </button>`; }).join("");
+    $("#count-p").textContent = `${C.products.length} pièces`;
+    $("#grid-b").innerHTML = C.bundles.map(b => `<button class="tile" type="button" data-open="${b.id}">
+        <div class="ph"><img src="${b.image}" alt="${b.name}" loading="lazy">${bundleLeft(b)?"":`<span class="soldtag small">Épuisé</span>`}</div>
+        <div class="meta"><b>${b.name}</b>${priceHTML(b.price,b.compareAt)}</div>
+      </button>`).join("");
+  }
+  renderGrids();
+  const maxOff = Math.max(0, ...C.products.filter(p=>p.compareAt).map(p => Math.round(100 - p.price*100/p.compareAt)));
+  if (C.cyberMondayOn()) $("#hero-line").textContent = `Cyber Monday : hoodie épais en ${C.cyberMonday.sizes.join(" et ")} à ${eur(C.cyberMonday.price)}. Dernier jour, jusqu'à 23 h 59.`;
+  else if (maxOff) $("#hero-line").textContent = `Jusqu'à -${maxOff} % sur la collection, jusqu'au lundi 30 novembre.`;
+
+  /* ---------- stock en direct (déduit des ventes Stripe) ---------- */
+  function applyStock(live){
+    if (!live) return;
+    C.products.forEach(p => { if (live[p.id]) p.stock = live[p.id]; });
+    renderGrids();
+    if (current && $("#psheet").classList.contains("on")){
+      current.picks.forEach((pk,i) => { const pid = current.kind==="bundle" ? B[current.id].parts[i] : current.id; if (pk.size && !P[pid].stock[pk.color][pk.size]) pk.size = null; });
+      const y = $("#ps-body").scrollTop; renderSheet(); $("#ps-body").scrollTop = y;
+    }
+  }
+  async function refreshStock(){
+    try{ const r = await fetch("/api/stock", { cache:"no-store" }); if (r.ok) applyStock((await r.json()).stock); }catch(e){}
+  }
+
+  /* ---------- sheets ---------- */
+  const scrim = $("#scrim");
+  function openSheet(el){ $$(".sheet").forEach(s=>{ s.classList.remove("on"); s.setAttribute("aria-hidden","true"); }); el.classList.add("on"); el.setAttribute("aria-hidden","false"); scrim.classList.add("on"); document.body.style.overflow="hidden"; }
+  function closeSheets(){ $$(".sheet").forEach(s=>{ s.classList.remove("on"); s.setAttribute("aria-hidden","true"); }); scrim.classList.remove("on"); document.body.style.overflow=""; }
+  scrim.onclick = closeSheets; $$(".js-close").forEach(b=>b.onclick = closeSheets);
+  addEventListener("keydown", e => { if (e.key === "Escape") closeSheets(); });
+
+  /* product / bundle sheet */
+  function pickerHTML(p, i, label){
+    const pick = current.picks[i];
+    const colors = Object.keys(p.stock);
+    return `<div class="${label?"part":"opt"}" data-i="${i}">
+      ${label?`<b>${label}</b>`:""}
+      ${colors.length>1?`<div class="opt"><div class="opt-l">Couleur <span>${pick.color}</span></div><div class="row">${colors.map(c=>`<button type="button" class="chip col" data-color="${c}" aria-pressed="${c===pick.color}" ${left(p,c)?"":"disabled"}><i class="sw" style="background:${SW[c]}"></i>${c}</button>`).join("")}</div>${pick.color==="noir"&&p.id==="zip"?`<span class="note">Photo : coloris gris</span>`:""}</div>`:`<div class="opt-l">Couleur <span>${pick.color}</span></div>`}
+      <div class="opt"><div class="opt-l">Taille <span>${pick.size||"Choisis"}</span></div>
+      <div class="row">${SIZES.map(s=>`<button type="button" class="chip" data-size="${s}" aria-pressed="${s===pick.size}" ${p.stock[pick.color][s]?"":"disabled"} aria-label="${s}${p.stock[pick.color][s]?"":" épuisé"}">${s}</button>`).join("")}</div></div>
+    </div>`;
+  }
+  function renderSheet(){
+    const isB = current.kind === "bundle", item = isB ? B[current.id] : P[current.id];
+    const imgs = isB ? [item.image] : item.images;
+    $("#ps-title").textContent = isB ? "Ensemble" : "Produit";
+    $("#ps-body").innerHTML = `
+      <div class="gallery" id="gal">${imgs.map(s=>`<img src="${s}" alt="${item.name}">`).join("")}</div>
+      ${imgs.length>1?`<div class="gdots">${imgs.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`:""}
+      <div class="pinfo">
+        <div style="display:flex;flex-direction:column;gap:6px"><h2>${item.name}</h2>${isB ? priceHTML(item.price,item.compareAt) : (C.priceFor(item) < item.price ? `<span class="price"><span class="now">${eur(C.priceFor(item, current.picks[0].size || C.cyberMonday.sizes[0]))}</span>${current.picks[0].size && C.priceFor(item, current.picks[0].size) === item.price ? "" : `<span class="note">en ${C.cyberMonday.sizes.join(" et ")} · Cyber Monday</span>`}</span>` : priceHTML(item.price,item.compareAt))}</div>
+        <p>${item.description}</p>
+        ${isB && unitSum(item) > item.price ? `<span class="bundle-note">Soit ${eur(unitSum(item) - item.price)} de moins qu'en achetant les pièces séparément.</span>` : ""}
+        ${C.sizeChart ? `<details><summary>Guide des tailles</summary><div style="overflow-x:auto;padding-bottom:16px"><table class="size-table"><tr><th>Taille</th><th>Largeur poitrine</th><th>Longueur</th></tr>${Object.entries(C.sizeChart).map(([k,v])=>`<tr><td>${k}</td><td>${v[0]} cm</td><td>${v[1]} cm</td></tr>`).join("")}</table></div></details>` : `<span class="note">Coupe ample et unisexe : prends ta taille habituelle pour un porté oversize.</span>`}
+        ${isB ? item.parts.map((pid,i)=>pickerHTML(P[pid], i, `Pièce ${i+1} · ${P[pid].name}`)).join("") : pickerHTML(item, 0)}
+      </div>`;
+    const gal = $("#gal");
+    if (gal) gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); $$(".gdots i").forEach((d,j)=>d.classList.toggle("on", j===i)); };
+    const ready = current.picks.every(p=>p.size);
+    $("#ps-add").textContent = ready ? `Ajouter au panier · ${eur(isB ? item.price : C.priceFor(item, current.picks[0].size))}` : (isB ? "Choisis une taille pour chaque pièce" : "Choisis ta taille");
+    $("#ps-add").disabled = !ready;
+    $("#ps-err").textContent = "";
+  }
+  function openItem(id){
+    const isB = !!B[id];
+    const parts = isB ? B[id].parts : [id];
+    current = { kind: isB?"bundle":"product", id, picks: parts.map(pid => { const p = P[pid]; return { color: Object.keys(p.stock).find(c=>left(p,c)>0) || Object.keys(p.stock)[0], size: null }; }) };
+    renderSheet(); openSheet($("#psheet")); $("#ps-body").scrollTop = 0;
+  }
+  document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if (t) openItem(t.dataset.open); });
+  $("#ps-body").addEventListener("click", e => {
+    const wrap = e.target.closest("[data-i]"); if (!wrap) return;
+    const i = +wrap.dataset.i, pick = current.picks[i];
+    const c = e.target.closest("[data-color]"), s = e.target.closest("[data-size]");
+    if (c && !c.disabled){ pick.color = c.dataset.color; const pid = current.kind==="bundle" ? B[current.id].parts[i] : current.id; if (!P[pid].stock[pick.color][pick.size]) pick.size = null; }
+    if (s && !s.disabled) pick.size = s.dataset.size;
+    if (c || s){ const y = $("#ps-body").scrollTop; renderSheet(); $("#ps-body").scrollTop = y; }
+  });
+
+  /* ---------- cart ---------- */
+  let cart = []; try{ cart = JSON.parse(store.get("dript-cart") || "[]"); }catch(e){ cart = []; }
+  if (thanks){ cart = []; $("#thanks").hidden = false; }
+  const keyOf = it => it.type + "|" + it.id + "|" + JSON.stringify(it.picks || [it.color, it.size]);
+  const save = () => { store.set("dript-cart", JSON.stringify(cart)); renderCart(); };
+  $("#ps-add").onclick = () => {
+    const it = current.kind === "bundle"
+      ? { type:"bundle", id:current.id, picks: current.picks.map(p=>({...p})), qty:1 }
+      : { type:"product", id:current.id, color:current.picks[0].color, size:current.picks[0].size, qty:1 };
+    const ex = cart.find(c => keyOf(c) === keyOf(it));
+    ex ? ex.qty++ : cart.push(it);
+    save(); openSheet($("#csheet"));
+  };
+  const unit = it => it.type === "bundle" ? B[it.id].price : C.priceFor(P[it.id], it.size);
+  function renderCart(){
+    const n = cart.reduce((a,c)=>a + c.qty * (c.type==="bundle" ? B[c.id].parts.length : 1), 0);
+    $("#cart-count").textContent = n;
+    if (!cart.length){
+      $("#c-body").innerHTML = `<div class="empty"><span>Ton panier est vide.</span><button class="btn js-shop" type="button">Voir la boutique</button></div>`;
+      $("#c-foot").hidden = true; return;
+    }
+    $("#c-foot").hidden = false;
+    $("#c-body").innerHTML = cart.map((it,i) => {
+      const isB = it.type === "bundle", item = isB ? B[it.id] : P[it.id];
+      const desc = isB ? it.picks.map((p,j)=>`${P[item.parts[j]].name} · ${p.color} · ${p.size}`).join("<br>") : `${it.color} · ${it.size}`;
+      return `<div class="line"><img src="${isB?item.image:item.images[0]}" alt="">
+        <div><div class="n">${item.name}</div><div class="d">${desc}</div>
+        <div class="qty"><button type="button" data-dec="${i}" aria-label="Retirer un">−</button><span>${it.qty}</span><button type="button" data-inc="${i}" aria-label="Ajouter un">+</button></div></div>
+        <div class="r"><span>${eur(unit(it)*it.qty)}</span><button class="rm" type="button" data-rm="${i}">Retirer</button></div></div>`; }).join("");
+    const sub = cart.reduce((a,c)=>a + unit(c)*c.qty, 0);
+    $("#c-sub").textContent = eur(sub); const free = C.shipping.freeFrom && n >= C.shipping.freeFrom, ship = free ? 0 : C.shipping.amount;
+    $("#c-ship").textContent = free ? "Offerte" : eur(ship); $("#c-tot").textContent = eur(sub + ship);
+    $("#c-err").dataset.hint = ""; if (!free && C.shipping.freeFrom) $("#c-hint").textContent = `Ajoute ${C.shipping.freeFrom - n} pièce pour la livraison offerte.`; else $("#c-hint").textContent = "";
+    $("#c-err").textContent = "";
+  }
+  $("#c-body").addEventListener("click", e => {
+    const t = e.target;
+    if (t.dataset.inc) { cart[+t.dataset.inc].qty = Math.min(10, cart[+t.dataset.inc].qty + 1); save(); }
+    if (t.dataset.dec) { const it = cart[+t.dataset.dec]; it.qty--; if (!it.qty) cart.splice(+t.dataset.dec,1); save(); }
+    if (t.dataset.rm)  { cart.splice(+t.dataset.rm,1); save(); }
+    if (t.closest(".js-shop")) { closeSheets(); location.hash = "boutique"; }
+  });
+  $("#cart-btn").onclick = () => { renderCart(); openSheet($("#csheet")); };
+  $("#c-pay").onclick = async () => {
+    const btn = $("#c-pay"), err = $("#c-err");
+    btn.disabled = true; btn.textContent = "Redirection…"; err.textContent = "";
+    try{
+      const r = await fetch("/api/checkout",{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ items: cart }) });
+      const d = await r.json().catch(()=>({}));
+      if (r.ok && d.url){ location.href = d.url; return; }
+      err.textContent = d.error || "Le paiement n'est pas disponible pour le moment.";
+      if (d.stock) applyStock(d.stock);
+    }catch(e){ err.textContent = "Le paiement fonctionnera une fois le site en ligne."; }
+    btn.disabled = false; btn.textContent = "Paiement";
+  };
+  /* ---------- pages légales ---------- */
+  const T = t => `<span class="todo">${t}</span>`;
+  const LEGAL = {
+    mentions: ["Mentions légales", `
+      <h3>Éditeur du site</h3><p>${T("Prénom Nom ou nom de l'entreprise")}, entrepreneur individuel (micro-entreprise).<br>SIRET : ${T("000 000 000 00000")}<br>Adresse : ${T("adresse postale")}<br>Contact : ${C.contact}</p>
+      <h3>Hébergement</h3><p>Netlify, Inc., 512 2nd Street, Suite 200, San Francisco, CA 94107, États-Unis.</p>
+      <h3>Paiement</h3><p>Les paiements sont traités par Stripe Payments Europe Ltd. DRIPT n'a jamais accès à tes données bancaires.</p>
+      <h3>Données personnelles</h3><p>Les informations de commande (nom, adresse, e-mail, téléphone) servent uniquement à traiter et livrer ta commande. Ton e-mail d'inscription sert uniquement à te prévenir des drops DRIPT. Tu peux demander leur suppression à ${C.contact}.</p>`],
+    cgv: ["Conditions de vente", `
+      <h3>Produits et prix</h3><p>Les prix sont indiqués en euros TTC${T(" (TVA non applicable, art. 293 B du CGI, si tu es en franchise)")}. Les frais de livraison (${eur(C.shipping.amount)}, offerts dès ${C.shipping.freeFrom} pièces) sont ajoutés avant le paiement.</p>
+      <h3>Commande et paiement</h3><p>La commande est validée après le paiement sur la page sécurisée Stripe. Un reçu est envoyé par e-mail. Les quantités sont limitées : une commande ne peut porter que sur le stock disponible au moment du paiement.</p>
+      <h3>Livraison</h3><p>Expédition sous 48 h ouvrées en envoi suivi, livraison en 2 à 5 jours ouvrés en France métropolitaine, Belgique, Luxembourg, Suisse et Monaco.</p>
+      <h3>Droit de rétractation</h3><p>Tu disposes de 14 jours à compter de la réception pour te rétracter, sans justification, en écrivant à ${C.contact}. L'article doit être renvoyé non porté, avec son étiquette, sous 14 jours. Le remboursement, frais de livraison initiaux compris, intervient sous 14 jours après réception du retour. Les frais de retour sont à ta charge.</p>
+      <h3>Garanties</h3><p>Les produits bénéficient de la garantie légale de conformité (art. L217-3 et suivants du Code de la consommation) et de la garantie des vices cachés (art. 1641 et suivants du Code civil).</p>
+      <h3>Litiges</h3><p>En cas de litige, contacte-nous d'abord à ${C.contact}. Tu peux aussi recourir gratuitement à un médiateur de la consommation : ${T("nom et site du médiateur")}.</p>`],
+    retours: ["Livraison et retours", `
+      <h3>Livraison</h3><p>${eur(C.shipping.amount)} par commande, offerte dès ${C.shipping.freeFrom} pièces, en envoi suivi. Expédition sous 48 h ouvrées, livraison en 2 à 5 jours ouvrés. Tu reçois le numéro de suivi par e-mail.</p>
+      <h3>Retours</h3><p>Tu as 14 jours après réception pour retourner une pièce non portée, avec son étiquette. Écris à ${C.contact} ou sur Instagram avec ton numéro de commande, on t'envoie l'adresse de retour. Le remboursement est fait sur ton moyen de paiement sous 14 jours après réception.</p>`]
+  };
+  function openLegal(k){ $("#l-title").textContent = LEGAL[k][0]; $("#l-body").innerHTML = LEGAL[k][1]; openSheet($("#lsheet")); }
+  document.addEventListener("click", e => { const a = e.target.closest("[data-legal]"); if (a){ e.preventDefault(); openLegal(a.dataset.legal); } });
+
+  if (location.hash === "#panier") { renderCart(); openSheet($("#csheet")); }
+  if (LEGAL[location.hash.slice(1)]) openLegal(location.hash.slice(1));
+  renderCart();
+  refreshStock(); setInterval(() => { if (!document.hidden) refreshStock(); }, 30000);
+})();
+</script>
