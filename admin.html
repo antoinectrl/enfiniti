@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>DRIPT Gestion</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111'/%3E%3Ctext x='5' y='23' font-family='Arial Black,Arial' font-weight='900' font-size='19' fill='%23fff'%3ED%3C/text%3E%3Ccircle cx='25' cy='21' r='2.6' fill='%23d4271d'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Back-office: one dense work surface. Summary tiles, then a filterable order table with bulk actions (labels → print → ship). Same monochrome + red system as the shop. */
+:root{
+  color-scheme:light;
+  --bg:#f6f6f4; --card:#ffffff; --ink:#111111; --ink-2:#555555; --muted:#8a8a8a; --line:#e6e6e3; --red:#d4271d;
+  --ok:#1f7a45; --ok-bg:#e7f4ec; --warn:#8a5a00; --warn-bg:#fff3d6; --info:#1d4ed8; --info-bg:#e8eefc; --off-bg:#efefed;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.logo{font-weight:900;font-size:22px;letter-spacing:-.05em}
+.logo i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:2px}
+.small{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 14px;border:1px solid var(--line);background:var(--card);border-radius:8px;cursor:pointer;font-weight:500;white-space:nowrap;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--ink)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.dark:hover{background:#333}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn svg{width:16px;height:16px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-a_preparer{background:var(--warn-bg);color:var(--warn)}
+.s-etiquette{background:var(--info-bg);color:var(--info)}
+.s-expediee{background:var(--ok-bg);color:var(--ok)}
+.s-annulee{background:var(--off-bg);color:var(--muted)}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login form{width:min(360px,100%);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.login input{height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px}
+.err{color:var(--red);font-size:13px;min-height:18px}
+
+/* top */
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
+.hl{display:flex;align-items:center;gap:14px}
+.conn{display:flex;gap:6px;flex-wrap:wrap}
+.conn span{font-size:12px;padding:3px 8px;border-radius:6px;background:var(--off-bg);color:var(--ink-2)}
+.conn span.on{background:var(--ok-bg);color:var(--ok)}
+.conn span.off{background:#fdeceb;color:var(--red)}
+main{padding-block:24px 64px;display:flex;flex-direction:column;gap:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.kpi b{display:block;font-size:28px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:6px}
+.kpi span{font-size:12.5px;color:var(--ink-2)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.stockgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0}
+.stockgrid > div{padding:14px 18px;border-right:1px solid var(--line)}
+.stockgrid > div:last-child{border-right:0}
+.stockgrid b{font-weight:600}
+.sz{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.sz span{font-family:var(--mono);font-size:12px;padding:3px 7px;border-radius:6px;background:var(--off-bg);font-variant-numeric:tabular-nums}
+.sz span.zero{color:#bbb;text-decoration:line-through}
+.sz span.low{background:#fdeceb;color:var(--red)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:8px 12px;border-radius:8px;cursor:pointer;color:var(--ink-2);font-weight:500}
+.tab[aria-pressed="true"]{background:var(--ink);color:#fff}
+.tab em{font-style:normal;opacity:.6;margin-left:4px;font-variant-numeric:tabular-nums}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 12px;width:220px;max-width:100%}
+select{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:var(--card);max-width:260px}
+.bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#fafaf8;border-bottom:1px solid var(--line)}
+.bulk b{font-weight:600;margin-right:4px}
+
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{text-align:left;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.row:hover td{background:#fbfbf9}
+tr.row.sel td{background:#f6f8ff}
+.num{font-family:var(--mono);font-size:12.5px;font-weight:500}
+.sub{color:var(--muted);font-size:12.5px}
+.items div{white-space:nowrap}
+.items .sub{white-space:normal}
+.money{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
+.acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.acts .btn{height:32px;padding:0 10px;font-size:13px}
+.det td{background:#fafaf8}
+.det-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.det-grid b{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.empty{padding:48px 16px;text-align:center;color:var(--ink-2)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,150%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;z-index:50;transition:transform .3s;max-width:calc(100% - 32px)}
+.toast.show{transform:translate(-50%,0)}
+.toast.bad{background:var(--red)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:grid;place-items:center;z-index:40;padding:16px}
+.modal > div{background:var(--card);border-radius:14px;padding:24px;width:min(520px,100%);max-height:85vh;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.modal h2{margin:0;font-size:20px}
+.pick{width:100%;border-collapse:collapse;min-width:0}
+.pick td,.pick th{padding:8px 4px}
+.pick td:last-child{text-align:right;font-family:var(--mono);font-weight:600}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.det-grid{grid-template-columns:1fr}.conn{display:none}}
+</style>
+</head>
+<body>
+
+<div class="login" id="login">
+  <form id="login-form">
+    <span class="logo">DRIPT<i></i></span>
+    <div><b style="font-size:18px">Gestion des commandes</b><div class="sub">Entre le mot de passe administrateur.</div></div>
+    <label for="pw" class="small">Mot de passe</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <button class="btn dark" type="submit">Se connecter</button>
+    <div class="err" id="login-err" role="status"></div>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <div class="wrap">
+      <div class="hl"><span class="logo">DRIPT<i></i></span><span class="small">Gestion</span></div>
+      <div class="conn" id="conn"></div>
+      <div class="tools">
+        <button class="btn" id="refresh" type="button" title="Actualiser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>Actualiser</button>
+        <button class="btn" id="logout" type="button">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="kpis" id="kpis"></div>
+
+    <div class="panel"><div class="toolbar" style="border-bottom:1px solid var(--line)"><b>Stock restant</b><span class="sub">Mis à jour en direct depuis les ventes</span></div><div class="stockgrid" id="stock"></div></div>
+
+    <div class="panel">
+      <div class="toolbar">
+        <div class="tabs" id="tabs"></div>
+        <div class="tools">
+          <input class="search" id="search" type="search" placeholder="Nom, e-mail, n° de commande…">
+          <select id="method" title="Mode d'envoi Sendcloud"><option value="">Mode d'envoi : règles Sendcloud</option></select>
+          <button class="btn" id="csv" type="button">Exporter CSV</button>
+        </div>
+      </div>
+      <div class="bulk" id="bulk" hidden>
+        <b id="bulk-n"></b>
+        <button class="btn dark" data-bulk="label" type="button">Créer les étiquettes</button>
+        <button class="btn" data-bulk="print" type="button">Imprimer les étiquettes</button>
+        <button class="btn" data-bulk="pick" type="button">Liste de préparation</button>
+        <button class="btn" data-bulk="ship" type="button">Marquer expédiées + e-mail</button>
+        <button class="btn" data-bulk="clear" type="button">Désélectionner</button>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th style="width:36px"><input type="checkbox" id="all" aria-label="Tout sélectionner"></th><th>Commande</th><th>Client</th><th>Articles</th><th style="text-align:right">Total</th><th>Statut</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+      <div class="empty" id="empty" hidden>Aucune commande ici pour l'instant.</div>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="modal" hidden><div><h2 id="m-title"></h2><div id="m-body"></div><button class="btn dark" id="m-close" type="button" style="align-self:flex-end">Fermer</button></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const eur = c => (c/100).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const store = { get(k){ try{ return sessionStorage.getItem(k) || localStorage.getItem("keep-"+k); }catch(e){ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }, del(k){ try{ sessionStorage.removeItem(k); }catch(e){} } };
+  const pref = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} } };
+  const LABELS = { a_preparer:"À préparer", etiquette:"Étiquette créée", expediee:"Expédiée", annulee:"Annulée / remboursée" };
+  let token = store.get("adm"), orders = [], config = {}, filter = "a_preparer", sel = new Set(), open = new Set();
+
+  function toast(msg, bad){ const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (bad?" bad":""); clearTimeout(t._h); t._h = setTimeout(()=>t.className="toast", 3200); }
+  async function api(action, body, asBlob){
+    const r = await fetch("/api/admin" + (body ? "" : "?action="+action), { method: body?"POST":"GET", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body: body ? JSON.stringify({ action, ...body }) : undefined });
+    if (r.status === 401){ logout(); throw new Error("Session expirée, reconnecte-toi."); }
+    if (asBlob && r.ok) return r.blob();
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.error || "Erreur");
+    return d;
+  }
+
+  /* ---------- login ---------- */
+  $("#login-form").onsubmit = async e => {
+    e.preventDefault(); token = $("#pw").value; $("#login-err").textContent = "";
+    try{ await load(); store.set("adm", token); $("#login").hidden = true; $("#app").hidden = false; }
+    catch(err){ $("#login-err").textContent = err.message === "Session expirée, reconnecte-toi." ? "Mot de passe incorrect." : err.message; }
+  };
+  function logout(){ store.del("adm"); token = null; $("#app").hidden = true; $("#login").hidden = false; }
+  $("#logout").onclick = logout;
+
+  /* ---------- data ---------- */
+  async function load(){
+    const d = await api("list"); orders = d.orders.sort((a,b)=>b.created-a.created); config = d.config;
+    render(); loadStock();
+    if (config.sendcloud && $("#method").options.length === 1) loadMethods();
+  }
+  async function loadStock(){
+    try{ const r = await fetch("/api/stock",{cache:"no-store"}); const d = await r.json(); const C = await catalog();
+      $("#stock").innerHTML = C.products.map(p => Object.entries(d.stock[p.id]).map(([c,sz]) => `<div><b>${esc(p.name)}</b> <span class="sub">${esc(c)} · ${Object.values(sz).reduce((a,b)=>a+b,0)} restants</span>
+        <div class="sz">${Object.entries(sz).map(([s,n])=>`<span class="${n===0?"zero":n<=3?"low":""}">${s} ${n}</span>`).join("")}</div></div>`).join("")).join("");
+    }catch(e){ $("#stock").innerHTML = `<div class="sub">Stock indisponible.</div>`; }
+  }
+  let _cat; async function catalog(){ if (_cat) return _cat; const t = await (await fetch("/catalog.js")).text(); const m = { exports:{} }; new Function("module", t)(m); return _cat = m.exports; }
+  async function loadMethods(){
+    try{ const d = await api("methods"); const saved = pref.get("sc-method") || "";
+      $("#method").innerHTML = `<option value="">Mode d'envoi : règles Sendcloud</option>` + d.methods.map(m=>`<option value="${m.id}" ${String(m.id)===saved?"selected":""}>${esc(m.name)}</option>`).join("");
+    }catch(e){ toast(e.message, true); }
+  }
+  $("#method").onchange = () => pref.set("sc-method", $("#method").value);
+
+  /* ---------- render ---------- */
+  function render(){
+    const live = orders.filter(o=>o.paid && !o.released);
+    const ca = live.reduce((a,o)=>a+o.total,0), pcs = live.reduce((a,o)=>a+o.pieces,0);
+    $("#kpis").innerHTML = [
+      ["Chiffre d'affaires", eur(ca)], ["Commandes", live.length], ["Pièces vendues", pcs],
+      ["À préparer", live.filter(o=>o.status==="a_preparer").length]
+    ].map(([l,v])=>`<div class="kpi"><span>${l}</span><b>${v}</b></div>`).join("");
+    $("#conn").innerHTML = `<span class="${config.live?"on":""}">Stripe ${config.live?"live":"test"}</span><span class="${config.sendcloud?"on":"off"}">Sendcloud ${config.sendcloud?"connecté":"non connecté"}</span><span class="${config.mail?"on":"off"}">E-mails ${config.mail?"actifs":"inactifs"}</span>`;
+    const counts = { a_preparer:0, etiquette:0, expediee:0, annulee:0 }; orders.forEach(o=>counts[o.status]++);
+    $("#tabs").innerHTML = [["a_preparer","À préparer"],["etiquette","Étiquette créée"],["expediee","Expédiées"],["all","Toutes"]]
+      .map(([k,l])=>`<button class="tab" type="button" data-tab="${k}" aria-pressed="${filter===k}">${l}<em>${k==="all"?orders.length:counts[k]}</em></button>`).join("");
+    const q = $("#search").value.trim().toLowerCase();
+    const list = orders.filter(o => (filter==="all" || o.status===filter) && (!q || [o.number,o.name,o.email,o.address.city].join(" ").toLowerCase().includes(q)));
+    $("#empty").hidden = list.length > 0;
+    $("#rows").innerHTML = list.map(o => {
+      const d = new Date(o.created*1000);
+      return `<tr class="row ${sel.has(o.id)?"sel":""}" data-id="${o.id}">
+        <td><input type="checkbox" data-sel="${o.id}" ${sel.has(o.id)?"checked":""} ${o.status==="annulee"?"disabled":""} aria-label="Sélectionner ${o.number}"></td>
+        <td><button class="btn" style="height:auto;padding:0;border:0;background:none" data-open="${o.id}"><span class="num">${o.number}</span></button><div class="sub">${d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short"})} ${d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div></td>
+        <td><div>${esc(o.name)}</div><div class="sub">${esc(o.address.postal_code)} ${esc(o.address.city)}</div></td>
+        <td class="items">${o.items.map(i=>`<div>${i.qty>1?i.qty+"× ":""}${esc(i.name)}</div>${i.detail?`<div class="sub">${esc(i.detail)}</div>`:""}`).join("")}</td>
+        <td class="money">${eur(o.total)}${o.shipping?"":`<div class="sub" style="font-weight:400">livraison offerte</div>`}</td>
+        <td><span class="pill s-${o.status}">${LABELS[o.status]}</span>${o.mail_confirm?"":`<div class="sub" style="color:var(--red)">confirmation non envoyée</div>`}</td>
+        <td><div class="acts">
+          ${o.status==="annulee"?"":o.parcel_id?`<button class="btn" data-act="print" data-id="${o.id}" type="button">Imprimer</button>`:`<button class="btn dark" data-act="label" data-id="${o.id}" type="button">Étiquette</button>`}
+          ${o.status==="etiquette"?`<button class="btn" data-act="ship" data-id="${o.id}" type="button">Expédiée</button>`:""}
+        </div></td></tr>
+        ${open.has(o.id)?`<tr class="det"><td></td><td colspan="6"><div class="det-grid">
+          <div><b>Adresse</b>${esc(o.name)}<br>${esc(o.address.line1)}${o.address.line2?"<br>"+esc(o.address.line2):""}<br>${esc(o.address.postal_code)} ${esc(o.address.city)} · ${esc(o.address.country)}</div>
+          <div><b>Contact</b><a href="mailto:${esc(o.email)}">${esc(o.email)}</a><br>${esc(o.phone)}</div>
+          <div><b>Suivi</b>${o.tracking?(o.tracking_url?`<a href="${esc(o.tracking_url)}" target="_blank" rel="noopener">${esc(o.tracking)}</a>`:esc(o.tracking)):"Pas encore d'étiquette"}
+            <div class="acts" style="justify-content:flex-start;margin-top:8px">
+              <button class="btn" data-act="resend" data-id="${o.id}" type="button">${o.mail_confirm?"Renvoyer":"Envoyer"} la confirmation</button>
+              ${o.status!=="a_preparer"&&o.status!=="annulee"?`<button class="btn" data-act="reset" data-id="${o.id}" type="button">Remettre « à préparer »</button>`:""}
+            </div></div>
+        </div></td></tr>`:""}`;
+    }).join("");
+    $("#all").checked = list.length > 0 && list.every(o => sel.has(o.id) || o.status==="annulee");
+    $("#bulk").hidden = sel.size === 0; $("#bulk-n").textContent = `${sel.size} sélectionnée${sel.size>1?"s":""}`;
+  }
+  $("#search").oninput = render;
+  $("#tabs").onclick = e => { const t = e.target.closest("[data-tab]"); if (t){ filter = t.dataset.tab; sel.clear(); render(); } };
+  $("#all").onchange = e => { const vis = $$("[data-sel]").filter(c=>!c.disabled).map(c=>c.dataset.sel); vis.forEach(id => e.target.checked ? sel.add(id) : sel.delete(id)); render(); };
+  $("#refresh").onclick = async () => { try{ await load(); toast("Commandes à jour"); }catch(e){ toast(e.message,true); } };
+
+  /* ---------- actions ---------- */
+  async function busy(btn, fn){ const t = btn.textContent; btn.disabled = true; btn.textContent = "…"; try{ await fn(); } catch(e){ toast(e.message,true); } btn.disabled = false; btn.textContent = t; }
+  async function makeLabels(ids){
+    const d = await api("label", { ids, method: $("#method").value || undefined });
+    d.done.forEach(x => { const o = orders.find(o=>o.id===x.id); Object.assign(o, x, { status:"etiquette" }); });
+    render();
+    if (d.errors.length) toast(`${d.done.length} étiquette(s) créée(s), ${d.errors.length} erreur(s) : ${d.errors[0].error}`, true);
+    else toast(`${d.done.length} étiquette(s) créée(s)`);
+    return d.done;
+  }
+  async function printLabels(parcels){
+    if (!parcels.length) return toast("Aucune étiquette à imprimer pour cette sélection", true);
+    const w = window.open("", "_blank");
+    try{ const blob = await api("labels-pdf", { parcels }, true); const url = URL.createObjectURL(blob);
+         if (w) w.location = url; else location.href = url; }
+    catch(e){ if (w) w.close(); throw e; }
+  }
+  async function ship(ids){
+    const d = await api("ship", { ids });
+    d.done.forEach(id => { const o = orders.find(o=>o.id===id); o.status = "expediee"; o.mail_ship = true; });
+    sel.clear(); render();
+    d.errors.length ? toast(`${d.done.length} expédiée(s), ${d.errors.length} erreur(s) : ${d.errors[0].error}`, true) : toast(`${d.done.length} commande(s) expédiée(s), e-mail de suivi envoyé`);
+  }
+  document.addEventListener("click", e => {
+    const c = e.target.closest("[data-sel]"); if (c){ c.checked ? sel.add(c.dataset.sel) : sel.delete(c.dataset.sel); render(); return; }
+    const op = e.target.closest("[data-open]"); if (op){ open.has(op.dataset.open) ? open.delete(op.dataset.open) : open.add(op.dataset.open); render(); return; }
+    const a = e.target.closest("[data-act]");
+    if (a){ const id = a.dataset.id, o = orders.find(o=>o.id===id);
+      if (a.dataset.act==="label") busy(a, () => makeLabels([id]));
+      if (a.dataset.act==="print") busy(a, () => printLabels([o.parcel_id]));
+      if (a.dataset.act==="ship") busy(a, () => ship([id]));
+      if (a.dataset.act==="resend") busy(a, async () => { await api("resend",{ id }); o.mail_confirm = true; render(); toast("E-mail de confirmation envoyé"); });
+      if (a.dataset.act==="reset") busy(a, async () => { await api("status",{ id, status:"a_preparer" }); o.status = "a_preparer"; render(); });
+      return; }
+    const b = e.target.closest("[data-bulk]");
+    if (b){ const ids = [...sel], picked = orders.filter(o=>sel.has(o.id));
+      if (b.dataset.bulk==="clear"){ sel.clear(); render(); }
+      if (b.dataset.bulk==="label") busy(b, async () => { const todo = picked.filter(o=>!o.parcel_id).map(o=>o.id); for (let i=0;i<todo.length;i+=10) await makeLabels(todo.slice(i,i+10)); });
+      if (b.dataset.bulk==="print") busy(b, () => printLabels(orders.filter(o=>sel.has(o.id) && o.parcel_id).map(o=>o.parcel_id)));
+      if (b.dataset.bulk==="ship") busy(b, async () => { for (let i=0;i<ids.length;i+=10) await ship(ids.slice(i,i+10)); });
+      if (b.dataset.bulk==="pick") pickList(picked);
+    }
+  });
+  function pickList(list){
+    const tot = {};
+    list.forEach(o => o.items.forEach(i => { (i.detail || i.name).split(" + ").forEach(part => { const k = i.detail ? part.replace(/^(Hoodie épais|Zip à capuche|Jogging)\s/, "$1 · ") : i.name; tot[k] = (tot[k]||0) + i.qty; }); }));
+    $("#m-title").textContent = `Liste de préparation · ${list.length} commande${list.length>1?"s":""}`;
+    $("#m-body").innerHTML = `<table class="pick"><tr><th style="text-align:left">Pièce</th><th style="text-align:right">Qté</th></tr>${Object.entries(tot).sort().map(([k,n])=>`<tr><td>${esc(k)}</td><td>${n}</td></tr>`).join("")}</table>`;
+    $("#modal").hidden = false;
+  }
+  $("#m-close").onclick = () => $("#modal").hidden = true;
+  $("#modal").onclick = e => { if (e.target.id === "modal") $("#modal").hidden = true; };
+  $("#csv").onclick = () => {
+    const rows = [["Commande","Date","Nom","E-mail","Téléphone","Adresse","Code postal","Ville","Pays","Articles","Total (€)","Statut","Suivi"]]
+      .concat(orders.map(o => [o.number, new Date(o.created*1000).toLocaleString("fr-FR"), o.name, o.email, o.phone, [o.address.line1,o.address.line2].filter(Boolean).join(", "), o.address.postal_code, o.address.city, o.address.country,
+        o.items.map(i=>`${i.qty}x ${i.name} ${i.detail}`).join(" / "), (o.total/100).toFixed(2).replace(".",","), LABELS[o.status], o.tracking]));
+    const csv = "﻿" + rows.map(r => r.map(v => `"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = `commandes-dript-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  };
+
+  if (token) load().then(()=>{ $("#login").hidden = true; $("#app").hidden = false; }).catch(()=>logout());
+  setInterval(() => { if (token && !document.hidden) load().catch(()=>{}); }, 60000);
+})();
+</script>
+</body>
+</html>

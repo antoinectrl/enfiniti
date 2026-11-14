@@ -1,11 +1,12 @@
 /* POST /api/webhook — événements Stripe (obligatoire avant le lancement).
    Variable requise : STRIPE_WEBHOOK_SECRET (whsec_...), donnée par Stripe quand tu crées le webhook.
 
-   - checkout.session.completed / async_payment_succeeded : commande confirmée (visible dans les logs Netlify).
+   - checkout.session.completed / async_payment_succeeded : commande confirmée → e-mail de confirmation au client.
    - checkout.session.async_payment_failed : paiement différé échoué → pièces remises en vente.
    - charge.refunded (remboursement total) : pièces remises en vente automatiquement. */
 const crypto = require("crypto");
 const { stripe, readUsage, json } = require("../../lib/shop.js");
+const { getOrder, sendConfirmation } = require("../../lib/orders.js");
 
 function verify(raw, header, secret) {
   if (!header || !secret) return false;
@@ -33,8 +34,14 @@ exports.handler = async (event) => {
     switch (evt.type) {
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded":
-        if (obj.payment_status !== "unpaid")
-          console.log("COMMANDE", obj.id, (obj.amount_total / 100).toFixed(2) + " €", JSON.stringify(readUsage(obj.metadata)), obj.customer_details?.email || "");
+        if (obj.payment_status !== "unpaid") {
+          console.log("COMMANDE", obj.id, (obj.amount_total / 100).toFixed(2) + " €", JSON.stringify(readUsage(obj.metadata)));
+          const order = await getOrder(obj.id);
+          if (!order.mail_confirm && order.email) {          // e-mail de confirmation, une seule fois
+            try { await sendConfirmation(order); }
+            catch (e) { console.error("E-MAIL NON ENVOYÉ", obj.id, e.message); }   // la commande reste valide ; renvoi possible depuis /admin
+          }
+        }
         break;
       case "checkout.session.async_payment_failed":
         await release(obj.id, "paiement_echoue");

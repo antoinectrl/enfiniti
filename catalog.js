@@ -21,18 +21,21 @@
         id: "hoodie", name: "Hoodie épais", price: 3500, compareAt: null,
         images: ["img/hoodie-front.jpg", "img/hoodie-back.jpg", "img/room-girl.jpg"],
         description: "Molleton épais, capuche doublée grise, coutures ondulées et étiquette rouge au dos. Coupe ample.",
+        weight: 0.9,   // kg, pour les étiquettes
         stock: { noir: { XS: 25, S: 38, M: 24, L: 6, XL: 5 } }
       },
       {
         id: "zip", name: "Zip à capuche", price: 2500, compareAt: null,
         images: ["img/zip-duo.jpg", "img/jog-duo.jpg"],
         description: "Zip à capuche en molleton plus léger, logo brodé sur la poitrine. Coupe ample.",
+        weight: 0.6,
         stock: { gris: { XS: 2, S: 4, M: 4, L: 0, XL: 3 }, noir: { XS: 0, S: 7, M: 0, L: 1, XL: 1 } }
       },
       {
         id: "jogging", name: "Jogging", price: 2500, compareAt: null,
         images: ["img/jog-duo.jpg", "img/zip-duo.jpg"],
         description: "Jogging large, poche arrière brodée, coutures courbes.",
+        weight: 0.6,
         stock: { gris: { XS: 1, S: 0, M: 1, L: 0, XL: 1 } }
       }
     ],

@@ -66,3 +66,32 @@ Ensuite, mets cette adresse dans ton compte Stripe (*Paramètres > Infos entrepr
 - Guide des tailles : mets tes mesures dans `sizeChart` (`catalog.js`).
 - Photo du zip noir à ajouter.
 - Les commandes et adresses arrivent dans Stripe > *Paiements*. Les inscrits « M'avertir » sont dans Stripe > *Clients* (export CSV).
+
+## Gestion des commandes : /admin
+
+Adresse : `https://ton-site/admin`, avec le mot de passe défini dans la variable Netlify `ADMIN_PASSWORD`.
+
+- **Tableau de bord** : chiffre d'affaires, commandes, pièces vendues, commandes à préparer, et stock restant taille par taille.
+- **Commandes** : onglets À préparer / Étiquette créée / Expédiées, recherche, détail (adresse, téléphone, suivi), export CSV pour Excel.
+- **En lot** : coche des commandes, puis *Créer les étiquettes*, *Imprimer les étiquettes* (un seul PDF), *Liste de préparation* (total des pièces à sortir) et *Marquer expédiées + e-mail*.
+
+### Sendcloud (étiquettes)
+1. Crée un compte sur sendcloud.com, active tes transporteurs (Colissimo, Mondial Relay…) et renseigne ton adresse d'expédition.
+2. *Paramètres > Intégrations > Sendcloud API > Connecter* : récupère la **clé publique** et la **clé secrète**.
+3. Dans Netlify, ajoute `SENDCLOUD_PUBLIC_KEY` et `SENDCLOUD_SECRET_KEY`.
+4. Dans /admin, choisis le **mode d'envoi** dans la liste. Prends un mode **à domicile** : la boutique ne demande pas de point relais au client.
+
+Le poids de chaque pièce est dans `catalog.js` (`weight`, en kg).
+
+### E-mails automatiques (Brevo, gratuit jusqu'à 300 e-mails par jour)
+1. Crée un compte sur brevo.com, puis *Expéditeurs, domaines et IP dédiées* : ajoute et valide l'adresse d'envoi (par exemple commandes@tondomaine.fr ; idéalement, authentifie ton domaine).
+2. *SMTP & API > Clés API* : crée une clé.
+3. Dans Netlify, ajoute `BREVO_API_KEY` et `MAIL_FROM` (l'adresse validée).
+
+Ensuite, chaque client reçoit automatiquement :
+- **la confirmation de commande** juste après le paiement (envoyée par le webhook Stripe, une seule fois) ;
+- **l'e-mail « ton colis est en route »** avec le lien de suivi quand tu cliques sur *Marquer expédiées*.
+
+Si un e-mail n'est pas parti, la commande l'indique en rouge dans /admin, avec un bouton pour le renvoyer.
+
+Après chaque ajout ou changement de variable dans Netlify, il faut redéployer le site.

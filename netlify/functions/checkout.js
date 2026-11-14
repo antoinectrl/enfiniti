@@ -58,7 +58,7 @@ exports.handler = async (event) => {
       mode: "payment",
       integration_identifier: "dript-black-friday-fapwmwsx",   // repère ce parcours dans le Dashboard Stripe
       locale: "fr",
-      success_url: `${origin}/?commande=merci`,
+      success_url: `${origin}/?commande=merci&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/#panier`,
       expires_at: Math.floor(Date.now() / 1000) + 31 * 60,       // panier réservé 31 min
       shipping_address_collection: { allowed_countries: { 0: "FR", 1: "BE", 2: "LU", 3: "CH", 4: "MC" } },
@@ -69,7 +69,7 @@ exports.handler = async (event) => {
         delivery_estimate: { minimum: { unit: "business_day", value: 2 }, maximum: { unit: "business_day", value: 5 } }
       } } },
       line_items: Object.fromEntries(lineItems.map((l, i) => [i, l])),
-      metadata: packUsage(used),
+      metadata: { ...packUsage(used), items: lineItems.map(l => `${l.quantity}× ${l.price_data.product_data.name} (${l.price_data.product_data.description})`).join(" | ").slice(0, 490) },
       payment_intent_data: { metadata: packUsage(used) }
     } });
     return json(200, { url: session.url });
