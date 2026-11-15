@@ -17,6 +17,27 @@ exports.handler = async (event) => {
           mail: !!(process.env.BREVO_API_KEY && process.env.MAIL_FROM),
           live: /_live_/.test(process.env.STRIPE_SECRET_KEY || process.env.stripe || "") } });
 
+      case "stats": {     // tableau de bord en direct (visites : base Cloudflare D1 ; paniers et commandes : Stripe)
+        const db = event.env && event.env.DB, now = Date.now();
+        const tz = "Europe/Paris", dayStart = new Date(new Date().toLocaleString("en-US", { timeZone: tz })); dayStart.setHours(0, 0, 0, 0);
+        const midnight = now - (new Date(new Date().toLocaleString("en-US", { timeZone: tz })).getTime() - dayStart.getTime());
+        const out = { tracking: !!db };
+        if (db) {
+          const one = (sql, ...v) => db.prepare(sql).bind(...v).first();
+          const all = (sql, ...v) => db.prepare(sql).bind(...v).all().then(r => r.results);
+          out.online = (await one("SELECT COUNT(DISTINCT sid) c FROM events WHERE ts > ?", now - 5 * 60e3)).c;
+          out.carts = (await one("SELECT COUNT(*) c FROM (SELECT sid, n FROM events e WHERE ts > ? AND ts = (SELECT MAX(ts) FROM events WHERE sid = e.sid AND ts > ?)) WHERE n > 0", now - 30 * 60e3, now - 30 * 60e3)).c;
+          out.today = await one("SELECT COUNT(DISTINCT sid) visitors, SUM(type='view') views, COUNT(DISTINCT CASE WHEN type='cart' THEN sid END) carted, COUNT(DISTINCT CASE WHEN type='checkout' THEN sid END) checkouts FROM events WHERE ts >= ?", midnight);
+          out.days = await all("SELECT strftime('%Y-%m-%d', ts/1000, 'unixepoch', '+1 hour') d, COUNT(DISTINCT sid) v FROM events WHERE ts >= ? GROUP BY d ORDER BY d", midnight - 6 * 864e5);
+          out.sources = await all("SELECT ref, COUNT(DISTINCT sid) v FROM events WHERE ts >= ? AND type='view' GROUP BY ref ORDER BY v DESC LIMIT 6", now - 7 * 864e5);
+        }
+        const { stripe } = require("../../lib/shop.js");
+        const open = await stripe(`checkout/sessions?limit=100&status=open&created[gte]=${Math.floor(now / 1000) - 3600}`);
+        out.paying = open.data.filter(s => s.expires_at * 1000 > now).length;
+        out.paying_amount = open.data.filter(s => s.expires_at * 1000 > now).reduce((a, s) => a + (s.amount_total || 0), 0);
+        return json(200, out);
+      }
+
       case "methods": {   // modes d'envoi Sendcloud disponibles vers la France
         const r = await O.sendcloud("shipping_methods?to_country=FR");
         return json(200, { methods: (r.shipping_methods || []).map(m => ({ id: m.id, name: m.name, carrier: m.carrier, min: m.min_weight, max: m.max_weight })) });

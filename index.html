@@ -554,6 +554,17 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
     history.replaceState(null, "", location.pathname);
   }
   $("#th-close").onclick = () => { $("#thanks").hidden = true; };
+  /* ---------- statistiques de visite (anonymes, sans cookie) ---------- */
+  let sid = store.get("dript-sid");
+  if (!sid || !/^[a-z0-9]{8,32}$/.test(sid)) { sid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); store.set("dript-sid", sid); }
+  function track(t){
+    const n = (typeof cart !== "undefined" ? cart : []).reduce((a,c)=>a + c.qty * (c.type==="bundle" ? B[c.id].parts.length : 1), 0);
+    try{ fetch("/api/track", { method:"POST", keepalive:true, headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ t, sid, n, p: document.getElementById("gate").hidden ? "/boutique" : "/accueil", r: document.referrer }) }).catch(()=>{}); }catch(e){}
+  }
+  setTimeout(() => track("view"), 300);
+  setInterval(() => { if (!document.hidden) track("ping"); }, 60000);
+
   const keyOf = it => it.type + "|" + it.id + "|" + JSON.stringify(it.picks || [it.color, it.size]);
   const save = () => { store.set("dript-cart", JSON.stringify(cart)); renderCart(); };
   $("#ps-add").onclick = () => {
@@ -562,7 +573,7 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
       : { type:"product", id:current.id, color:current.picks[0].color, size:current.picks[0].size, qty:1 };
     const ex = cart.find(c => keyOf(c) === keyOf(it));
     ex ? ex.qty++ : cart.push(it);
-    save(); openSheet($("#csheet"));
+    save(); openSheet($("#csheet")); track("cart");
     $("#c-body").insertAdjacentHTML("afterbegin", `<div class="added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Ajouté au panier</div>`);
     const cc = $("#cart-count"); cc.classList.remove("bump"); void cc.offsetWidth; cc.classList.add("bump");
   };
@@ -597,6 +608,7 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
   });
   $("#cart-btn").onclick = () => { renderCart(); openSheet($("#csheet")); };
   $("#c-pay").onclick = async () => {
+    track("checkout");
     const btn = $("#c-pay"), err = $("#c-err");
     btn.disabled = true; btn.textContent = "Redirection…"; err.textContent = "";
     try{

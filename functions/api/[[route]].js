@@ -6,8 +6,9 @@ import subscribe from "../../netlify/functions/subscribe.js";
 import webhook from "../../netlify/functions/webhook.js";
 import admin from "../../netlify/functions/admin.js";
 import order from "../../netlify/functions/order.js";
+import track from "../../netlify/functions/track.js";
 
-const HANDLERS = { checkout, stock, subscribe, webhook, admin, order };
+const HANDLERS = { checkout, stock, subscribe, webhook, admin, order, track };
 
 export async function onRequest(ctx) {
   const { request, env, params } = ctx;
@@ -25,9 +26,10 @@ export async function onRequest(ctx) {
   const body = ["GET", "HEAD"].includes(request.method) ? "" : await request.text();
 
   const res = await fn.handler({
-    httpMethod: request.method, headers, body, isBase64Encoded: false,
+    httpMethod: request.method, headers, body, isBase64Encoded: false, env,
     queryStringParameters: Object.fromEntries(url.searchParams)
   });
+  if (res.statusCode === 204) return new Response(null, { status: 204 });
   const out = res.isBase64Encoded ? Uint8Array.from(atob(res.body), c => c.charCodeAt(0)) : res.body;
   return new Response(out, { status: res.statusCode, headers: res.headers || {} });
 }
