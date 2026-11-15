@@ -4,3 +4,5 @@ node_modules/
 .env
 public/
 .wrangler/
+dist-worker/
+tools/assets.gen.mjs

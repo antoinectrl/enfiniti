@@ -95,3 +95,15 @@ Ensuite, chaque client reçoit automatiquement :
 Si un e-mail n'est pas parti, la commande l'indique en rouge dans /admin, avec un bouton pour le renvoyer.
 
 Après chaque ajout ou changement de variable dans Netlify, il faut redéployer le site.
+
+## Hébergement actuel : Cloudflare Pages (gratuit, sans badge)
+
+Adresse : https://enfiniti.pages.dev (admin : https://enfiniti.pages.dev/admin)
+
+- `tools/build-worker.sh` fabrique `dist-worker/_worker.js` : un seul fichier qui contient les pages, les photos et toutes les fonctions `/api`.
+- Ce fichier est envoyé directement à Cloudflare (projet Pages `enfiniti`).
+- Variables : Cloudflare → Workers & Pages → enfiniti → Paramètres → Variables et secrets.
+  - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ADMIN_PASSWORD`, `ALLOW_EARLY_CHECKOUT` (à supprimer avant le lancement)
+  - plus tard : `SENDCLOUD_PUBLIC_KEY`, `SENDCLOUD_SECRET_KEY`, `BREVO_API_KEY`, `MAIL_FROM`
+- Après un changement de variable, il faut redéployer.
+- Nom de domaine : Cloudflare → Domain Registration (prix coûtant), puis enfiniti → Domaines personnalisés.
