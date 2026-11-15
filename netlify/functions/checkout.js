@@ -1,6 +1,7 @@
 /* POST /api/checkout — crée la page de paiement Stripe à partir du panier.
    Les prix viennent de catalog.js (jamais du navigateur) et le stock est vérifié en direct. */
 const { CATALOG, SIZES, byId, bundleById, stripe, packUsage, remainingStock, json, KEY } = require("../../lib/shop.js");
+const { servicePoint } = require("../../lib/orders.js");
 
 const valid = (pid, pick) => byId[pid] && pick && byId[pid].stock[pick.color] && SIZES.includes(pick.size) ? byId[pid] : null;
 
@@ -51,7 +52,16 @@ exports.handler = async (event) => {
     }
 
     const pieces = Object.values(used).reduce((a, n) => a + n, 0);
-    const free = CATALOG.shipping.freeFrom && pieces >= CATALOG.shipping.freeFrom;
+    // Livraison : point relais (vérifié auprès de Sendcloud) ou domicile
+    const ship = body.shipping || {};
+    let relay = null;
+    if (ship.mode === "relais") {
+      try { relay = await servicePoint(String(ship.point_id || "")); } catch (e) { return json(400, { error: "Ce point relais n'est plus disponible, choisis-en un autre." }); }
+    }
+    const home = !relay && CATALOG.shipping.home && ship.mode === "domicile";
+    const free = !home && CATALOG.shipping.freeFrom && pieces >= CATALOG.shipping.freeFrom;
+    const shipAmount = free ? 0 : home ? CATALOG.shipping.home.amount : CATALOG.shipping.amount;
+    const shipLabel = relay ? `Point relais · ${relay.name}`.slice(0, 100) : home ? CATALOG.shipping.home.label : "Livraison suivie";
     const host = event.headers["x-forwarded-host"] || event.headers.host;
     const origin = process.env.URL || `https://${host}`;
     const session = await stripe("checkout/sessions", { method: "POST", body: {
@@ -61,15 +71,16 @@ exports.handler = async (event) => {
       success_url: `${origin}/?commande=merci&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/#panier`,
       expires_at: Math.floor(Date.now() / 1000) + 31 * 60,       // panier réservé 31 min
-      shipping_address_collection: { allowed_countries: { 0: "FR", 1: "BE", 2: "LU", 3: "CH", 4: "MC" } },
+      shipping_address_collection: { allowed_countries: relay ? { 0: "FR" } : { 0: "FR", 1: "BE", 2: "LU", 3: "CH", 4: "MC" } },
+      custom_text: relay ? { shipping_address: { message: `Ton colis sera livré au point relais ${relay.name}, ${relay.street}, ${relay.postal_code} ${relay.city}. Indique ici ton adresse personnelle.`.slice(0, 1200) } } : undefined,
       phone_number_collection: { enabled: "true" },
       shipping_options: { 0: { shipping_rate_data: {
-        type: "fixed_amount", display_name: free ? "Livraison suivie offerte" : CATALOG.shipping.label,
-        fixed_amount: { amount: free ? 0 : CATALOG.shipping.amount, currency: CATALOG.currency },
+        type: "fixed_amount", display_name: shipLabel + (free ? " (offerte)" : ""),
+        fixed_amount: { amount: shipAmount, currency: CATALOG.currency },
         delivery_estimate: { minimum: { unit: "business_day", value: 2 }, maximum: { unit: "business_day", value: 5 } }
       } } },
       line_items: Object.fromEntries(lineItems.map((l, i) => [i, l])),
-      metadata: { ...packUsage(used), items: lineItems.map(l => `${l.quantity}× ${l.price_data.product_data.name} (${l.price_data.product_data.description})`).join(" | ").slice(0, 490) },
+      metadata: { ...packUsage(used), ...(relay ? { relay_id: relay.id, relay_name: relay.name.slice(0, 120), relay_addr: `${relay.street}, ${relay.postal_code} ${relay.city}`.slice(0, 200) } : {}), ship_mode: relay ? "relais" : home ? "domicile" : "standard", items: lineItems.map(l => `${l.quantity}× ${l.price_data.product_data.name} (${l.price_data.product_data.description})`).join(" | ").slice(0, 490) },
       payment_intent_data: { metadata: packUsage(used) }
     } });
     return json(200, { url: session.url });

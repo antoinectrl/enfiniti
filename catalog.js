@@ -11,7 +11,10 @@
 (function (root) {
   const CATALOG = {
     currency: "eur",
-    shipping: { amount: 500, freeFrom: 2, label: "Livraison suivie" },   // 5 €, offerte dès 2 pièces (lots compris)
+    /* Livraison : point relais (5 €, offert dès 2 pièces) ou domicile (7 €).
+       Le point relais s'active tout seul dès que Sendcloud est connecté. */
+    shipping: { amount: 500, freeFrom: 2, label: "Point relais", relayCarrier: "mondial_relay",
+                home: { amount: 700, label: "À domicile" } },
     dropDate: "2026-11-26T18:00:00+01:00",                   // ouverture : jeudi 26 novembre, 18 h (veille du Black Friday)
     dropEnd:  "2026-11-30T23:59:00+01:00",                   // fin : lundi 30 novembre (Cyber Monday), 23 h 59
     contact:  "contact@tondomaine.fr",                       // e-mail affiché dans les pages légales

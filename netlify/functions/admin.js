@@ -40,14 +40,14 @@ exports.handler = async (event) => {
 
       case "methods": {   // modes d'envoi Sendcloud disponibles vers la France
         const r = await O.sendcloud("shipping_methods?to_country=FR");
-        return json(200, { methods: (r.shipping_methods || []).map(m => ({ id: m.id, name: m.name, carrier: m.carrier, min: m.min_weight, max: m.max_weight })) });
+        return json(200, { methods: (r.shipping_methods || []).map(m => ({ id: m.id, name: m.name, carrier: m.carrier, relay: m.service_point_input === "required", min: m.min_weight, max: m.max_weight })) });
       }
 
       case "label": {     // crée les étiquettes manquantes pour les commandes données
         const ids = (body.ids || []).slice(0, 25), done = [], errors = [];
         for (const id of ids) {
           try { const o = await O.getOrder(id); if (!o.paid || o.released) throw new Error("commande non payée ou annulée");
-                done.push({ id, ...(await O.createLabel(o, body.method)) }); }
+                done.push({ id, ...(await O.createLabel(o, { relay: body.methodRelay, home: body.methodHome })) }); }
           catch (e) { errors.push({ id, error: e.message }); }
         }
         return json(200, { done, errors });

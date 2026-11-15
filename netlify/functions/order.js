@@ -10,7 +10,7 @@ exports.handler = async (event) => {
     const o = await getOrder(id);
     if (!o.paid && !o.items.length) return json(404, { error: "Commande introuvable" });
     return json(200, { number: o.number, first_name: (o.name || "").split(" ")[0], email: o.email.replace(/^(.).*(@.*)$/, "$1•••$2"),
-      items: o.items.map(i => ({ name: i.name, detail: i.detail, qty: i.qty, total: i.total })), shipping: o.shipping, total: o.total, paid: o.paid });
+      relay: o.relay, items: o.items.map(i => ({ name: i.name, detail: i.detail, qty: i.qty, total: i.total })), shipping: o.shipping, total: o.total, paid: o.paid });
   } catch (e) {
     return json(404, { error: "Commande introuvable" });
   }

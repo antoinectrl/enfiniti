@@ -165,7 +165,8 @@ tr.row.sel td{background:#f6f8ff}
         <div class="tabs" id="tabs"></div>
         <div class="tools">
           <input class="search" id="search" type="search" placeholder="Nom, e-mail, n° de commande…">
-          <select id="method" title="Mode d'envoi Sendcloud"><option value="">Mode d'envoi : règles Sendcloud</option></select>
+          <select id="m-relay" title="Envoi pour les points relais"><option value="">Envoi point relais : à choisir</option></select>
+          <select id="m-home" title="Envoi à domicile"><option value="">Envoi domicile : règles Sendcloud</option></select>
           <button class="btn" id="csv" type="button">Exporter CSV</button>
         </div>
       </div>
@@ -222,7 +223,7 @@ tr.row.sel td{background:#f6f8ff}
   async function load(){
     const d = await api("list"); orders = d.orders.sort((a,b)=>b.created-a.created); config = d.config;
     render(); loadStock(); loadStats();
-    if (config.sendcloud && $("#method").options.length === 1) loadMethods();
+    if (config.sendcloud && $("#m-relay").options.length === 1) loadMethods();
   }
   async function loadStock(){
     try{ const r = await fetch("/api/stock",{cache:"no-store"}); const d = await r.json(); const C = await catalog();
@@ -232,11 +233,15 @@ tr.row.sel td{background:#f6f8ff}
   }
   let _cat; async function catalog(){ if (_cat) return _cat; const t = await (await fetch("/catalog.js")).text(); const m = { exports:{} }; new Function("module", t)(m); return _cat = m.exports; }
   async function loadMethods(){
-    try{ const d = await api("methods"); const saved = pref.get("sc-method") || "";
-      $("#method").innerHTML = `<option value="">Mode d'envoi : règles Sendcloud</option>` + d.methods.map(m=>`<option value="${m.id}" ${String(m.id)===saved?"selected":""}>${esc(m.name)}</option>`).join("");
+    try{ const d = await api("methods"); const sr = pref.get("sc-relay") || "", sh = pref.get("sc-home") || "";
+      const rel = d.methods.filter(m=>m.relay), home = d.methods.filter(m=>!m.relay);
+      if (!sr){ const mr = rel.find(m=>/mondial/i.test(m.carrier) && !/xl/i.test(m.name)) || rel[0]; if (mr) pref.set("sc-relay", mr.id); }
+      $("#m-relay").innerHTML = `<option value="">Envoi point relais : à choisir</option>` + rel.map(m=>`<option value="${m.id}" ${String(m.id)===(pref.get("sc-relay")||"")?"selected":""}>${esc(m.name)}</option>`).join("");
+      $("#m-home").innerHTML = `<option value="">Envoi domicile : règles Sendcloud</option>` + home.map(m=>`<option value="${m.id}" ${String(m.id)===sh?"selected":""}>${esc(m.name)}</option>`).join("");
     }catch(e){ toast(e.message, true); }
   }
-  $("#method").onchange = () => pref.set("sc-method", $("#method").value);
+  $("#m-relay").onchange = () => pref.set("sc-relay", $("#m-relay").value);
+  $("#m-home").onchange = () => pref.set("sc-home", $("#m-home").value);
 
   /* ---------- render ---------- */
   function render(){
@@ -258,7 +263,7 @@ tr.row.sel td{background:#f6f8ff}
       return `<tr class="row ${sel.has(o.id)?"sel":""}" data-id="${o.id}">
         <td><input type="checkbox" data-sel="${o.id}" ${sel.has(o.id)?"checked":""} ${o.status==="annulee"?"disabled":""} aria-label="Sélectionner ${o.number}"></td>
         <td><button class="btn" style="height:auto;padding:0;border:0;background:none" data-open="${o.id}"><span class="num">${o.number}</span></button><div class="sub">${d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short"})} ${d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div></td>
-        <td><div>${esc(o.name)}</div><div class="sub">${esc(o.address.postal_code)} ${esc(o.address.city)}</div></td>
+        <td><div>${esc(o.name)}</div><div class="sub">${o.relay ? "Relais · " + esc(o.relay.name) : "Domicile · " + esc(o.address.postal_code) + " " + esc(o.address.city)}</div></td>
         <td class="items">${o.items.map(i=>`<div>${i.qty>1?i.qty+"× ":""}${esc(i.name)}</div>${i.detail?`<div class="sub">${esc(i.detail)}</div>`:""}`).join("")}</td>
         <td class="money">${eur(o.total)}${o.shipping?"":`<div class="sub" style="font-weight:400">livraison offerte</div>`}</td>
         <td><span class="pill s-${o.status}">${LABELS[o.status]}</span>${o.mail_confirm?"":`<div class="sub" style="color:var(--red)">confirmation non envoyée</div>`}</td>
@@ -267,7 +272,7 @@ tr.row.sel td{background:#f6f8ff}
           ${o.status==="etiquette"?`<button class="btn" data-act="ship" data-id="${o.id}" type="button">Expédiée</button>`:""}
         </div></td></tr>
         ${open.has(o.id)?`<tr class="det"><td></td><td colspan="6"><div class="det-grid">
-          <div><b>Adresse</b>${esc(o.name)}<br>${esc(o.address.line1)}${o.address.line2?"<br>"+esc(o.address.line2):""}<br>${esc(o.address.postal_code)} ${esc(o.address.city)} · ${esc(o.address.country)}</div>
+          <div>${o.relay?`<b>Point relais</b>${esc(o.relay.name)}<br>${esc(o.relay.address)}<br><br>`:""}<b>${o.relay?"Adresse du client":"Adresse"}</b>${esc(o.name)}<br>${esc(o.address.line1)}${o.address.line2?"<br>"+esc(o.address.line2):""}<br>${esc(o.address.postal_code)} ${esc(o.address.city)} · ${esc(o.address.country)}</div>
           <div><b>Contact</b><a href="mailto:${esc(o.email)}">${esc(o.email)}</a><br>${esc(o.phone)}</div>
           <div><b>Suivi</b>${o.tracking?(o.tracking_url?`<a href="${esc(o.tracking_url)}" target="_blank" rel="noopener">${esc(o.tracking)}</a>`:esc(o.tracking)):"Pas encore d'étiquette"}
             <div class="acts" style="justify-content:flex-start;margin-top:8px">
@@ -287,7 +292,7 @@ tr.row.sel td{background:#f6f8ff}
   /* ---------- actions ---------- */
   async function busy(btn, fn){ const t = btn.textContent; btn.disabled = true; btn.textContent = "…"; try{ await fn(); } catch(e){ toast(e.message,true); } btn.disabled = false; btn.textContent = t; }
   async function makeLabels(ids){
-    const d = await api("label", { ids, method: $("#method").value || undefined });
+    const d = await api("label", { ids, methodRelay: $("#m-relay").value || undefined, methodHome: $("#m-home").value || undefined });
     d.done.forEach(x => { const o = orders.find(o=>o.id===x.id); Object.assign(o, x, { status:"etiquette" }); });
     render();
     if (d.errors.length) toast(`${d.done.length} étiquette(s) créée(s), ${d.errors.length} erreur(s) : ${d.errors[0].error}`, true);

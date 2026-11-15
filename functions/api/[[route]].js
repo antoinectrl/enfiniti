@@ -7,8 +7,10 @@ import webhook from "../../netlify/functions/webhook.js";
 import admin from "../../netlify/functions/admin.js";
 import order from "../../netlify/functions/order.js";
 import track from "../../netlify/functions/track.js";
+import relais from "../../netlify/functions/relais.js";
+import mcp from "../../netlify/functions/mcp.js";
 
-const HANDLERS = { checkout, stock, subscribe, webhook, admin, order, track };
+const HANDLERS = { checkout, stock, subscribe, webhook, admin, order, track, relais, mcp };
 
 export async function onRequest(ctx) {
   const { request, env, params } = ctx;
@@ -26,10 +28,10 @@ export async function onRequest(ctx) {
   const body = ["GET", "HEAD"].includes(request.method) ? "" : await request.text();
 
   const res = await fn.handler({
-    httpMethod: request.method, headers, body, isBase64Encoded: false, env,
+    httpMethod: request.method, headers, body, isBase64Encoded: false, env, path: url.pathname,
     queryStringParameters: Object.fromEntries(url.searchParams)
   });
-  if (res.statusCode === 204) return new Response(null, { status: 204 });
+  if (res.statusCode === 204 || res.statusCode === 202) return new Response(null, { status: res.statusCode });
   const out = res.isBase64Encoded ? Uint8Array.from(atob(res.body), c => c.charCodeAt(0)) : res.body;
   return new Response(out, { status: res.statusCode, headers: res.headers || {} });
 }

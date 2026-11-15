@@ -107,3 +107,13 @@ Adresse : https://enfiniti.pages.dev (admin : https://enfiniti.pages.dev/admin)
   - plus tard : `SENDCLOUD_PUBLIC_KEY`, `SENDCLOUD_SECRET_KEY`, `BREVO_API_KEY`, `MAIL_FROM`
 - Après un changement de variable, il faut redéployer.
 - Nom de domaine : Cloudflare → Domain Registration (prix coûtant), puis enfiniti → Domaines personnalisés.
+
+## Point relais
+- Le client choisit dans le panier : **point relais Mondial Relay** (5 €, offert dès 2 pièces) ou **domicile** (7 €). Les prix se règlent dans `catalog.js` (`shipping`).
+- Le point relais apparaît tout seul dès que les clés Sendcloud sont enregistrées dans Cloudflare. Avant ça, la boutique propose « Livraison suivie » à 5 €.
+- Dans /admin, choisis une fois **Envoi point relais** (ex. Mondial Relay Point Relais) et **Envoi domicile** : les étiquettes partent vers le bon relais automatiquement.
+
+## Connecteur Claude
+Adresse secrète : `https://enfiniti.pages.dev/api/mcp/<MCP_TOKEN>` (variable `MCP_TOKEN` dans Cloudflare).
+Dans Claude : Paramètres → Connecteurs → Ajouter un connecteur personnalisé → colle l'adresse.
+Claude peut alors lire les statistiques, les commandes, le détail d'une commande et le stock (lecture seule). Ne partage pas cette adresse : elle donne accès aux commandes.
