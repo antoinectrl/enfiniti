@@ -14,7 +14,7 @@ exports.handler = async (event) => {
       case "list":
         return json(200, { orders: await O.listOrders(), config: {
           sendcloud: !!(process.env.SENDCLOUD_PUBLIC_KEY && process.env.SENDCLOUD_SECRET_KEY),
-          mail: !!(process.env.BREVO_API_KEY && process.env.MAIL_FROM),
+          mail: O.mailReady(), google: !!process.env.GMAIL_SCRIPT_URL,
           live: /_live_/.test(process.env.STRIPE_SECRET_KEY || process.env.stripe || "") } });
 
       case "stats": {     // tableau de bord en direct (visites : base Cloudflare D1 ; paniers et commandes : Stripe)
@@ -36,6 +36,16 @@ exports.handler = async (event) => {
         out.paying = open.data.filter(s => s.expires_at * 1000 > now).length;
         out.paying_amount = open.data.filter(s => s.expires_at * 1000 > now).reduce((a, s) => a + (s.amount_total || 0), 0);
         return json(200, out);
+      }
+
+      case "mail-info": {  // nombre d'inscrits + envois Google restants aujourd'hui
+        const subs = await O.subscribers();
+        let quota = null; try { quota = await O.mailQuota(); } catch (e) {}
+        return json(200, { subscribers: subs.length, ready: O.mailReady(), quota });
+      }
+
+      case "broadcast": {  // e-mail à toute la liste (par paquets de 20, reprend là où il s'est arrêté)
+        return json(200, await O.broadcast(body));
       }
 
       case "methods": {   // modes d'envoi Sendcloud disponibles vers la France

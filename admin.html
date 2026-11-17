@@ -125,6 +125,16 @@ tr.row.sel td{background:#f6f8ff}
 .bars i{display:block;width:100%;background:var(--ink);border-radius:4px 4px 0 0;min-height:2px}
 .srcs{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:13px}
 .srcs div{display:flex;justify-content:space-between}
+.mailbox{padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mailbox label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.mailbox input,.mailbox textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+.mailbox textarea{min-height:150px;resize:vertical}
+.mailbox .col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.mailinfo{display:flex;gap:8px;flex-wrap:wrap}
+.mailinfo span{font-size:12.5px;padding:4px 9px;border-radius:6px;background:var(--off-bg)}
+.prog{height:6px;border-radius:3px;background:var(--off-bg);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--ink);transition:width .3s}
+@media (max-width:900px){.mailbox{grid-template-columns:1fr}}
 @media (max-width:1100px){.live{grid-template-columns:1fr}}
 @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.det-grid{grid-template-columns:1fr}.conn{display:none}}
 </style>
@@ -159,6 +169,24 @@ tr.row.sel td{background:#f6f8ff}
     <div class="kpis" id="kpis"></div>
 
     <div class="panel"><div class="toolbar" style="border-bottom:1px solid var(--line)"><b>Stock restant</b><span class="sub">Mis à jour en direct depuis les ventes</span></div><div class="stockgrid" id="stock"></div></div>
+
+    <div class="panel">
+      <div class="toolbar"><b>E-mail à toute ma liste</b><div class="mailinfo" id="mail-info"><span>Chargement…</span></div></div>
+      <div class="mailbox">
+        <div class="col">
+          <div><label for="mb-subject">Objet</label><input id="mb-subject" maxlength="120" placeholder="C'est jeudi 18 h : le Black Friday DRIPT ouvre"></div>
+          <div><label for="mb-msg">Message</label><textarea id="mb-msg" placeholder="Salut,&#10;&#10;Le Black Friday DRIPT ouvre jeudi 26 novembre à 18 h. Hoodie épais à 35 €, point relais offert dès 2 pièces.&#10;&#10;Les quantités sont limitées, sois là à l'heure."></textarea></div>
+          <div><label for="mb-cta">Texte du bouton (lien vers la boutique)</label><input id="mb-cta" value="Voir la boutique" maxlength="40"></div>
+        </div>
+        <div class="col">
+          <div><label for="mb-test">Envoyer d'abord un test à</label><input id="mb-test" type="email" placeholder="ton e-mail"></div>
+          <button class="btn" id="mb-send-test" type="button">M'envoyer un test</button>
+          <button class="btn dark" id="mb-send-all" type="button">Envoyer à toute la liste</button>
+          <div class="prog"><i id="mb-prog"></i></div>
+          <div class="sub" id="mb-status">Les e-mails partent par paquets. Si la limite du jour est atteinte, clique à nouveau demain : les personnes déjà servies ne reçoivent rien en double.</div>
+        </div>
+      </div>
+    </div>
 
     <div class="panel">
       <div class="toolbar">
@@ -222,7 +250,7 @@ tr.row.sel td{background:#f6f8ff}
   /* ---------- data ---------- */
   async function load(){
     const d = await api("list"); orders = d.orders.sort((a,b)=>b.created-a.created); config = d.config;
-    render(); loadStock(); loadStats();
+    render(); loadStock(); loadStats(); loadMailInfo();
     if (config.sendcloud && $("#m-relay").options.length === 1) loadMethods();
   }
   async function loadStock(){
@@ -348,6 +376,33 @@ tr.row.sel td{background:#f6f8ff}
     const csv = "﻿" + rows.map(r => r.map(v => `"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = `commandes-dript-${new Date().toISOString().slice(0,10)}.csv`; a.click();
   };
+
+  /* ---------- e-mail à la liste ---------- */
+  async function loadMailInfo(){
+    try{ const d = await api("mail-info", {});
+      $("#mail-info").innerHTML = `<span>${d.subscribers} inscrits</span>` + (d.ready ? `<span style="background:var(--ok-bg);color:var(--ok)">Envoi prêt</span>` : `<span style="background:#fdeceb;color:var(--red)">Envoi pas encore connecté</span>`) + (d.quota!=null ? `<span>${d.quota} envois possibles aujourd'hui</span>` : "");
+      $("#mb-send-all").textContent = `Envoyer à toute la liste (${d.subscribers})`;
+    }catch(e){ $("#mail-info").innerHTML = `<span>${esc(e.message)}</span>`; }
+  }
+  const camp = () => $("#mb-subject").value.toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g,"").slice(0,30) || "campagne";
+  const mailBody = () => ({ subject: $("#mb-subject").value.trim(), message: $("#mb-msg").value.trim(), cta: $("#mb-cta").value.trim(), campaign: camp() });
+  $("#mb-send-test").onclick = e => busy(e.target, async () => {
+    const to = $("#mb-test").value.trim(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("Entre ton e-mail pour le test");
+    await api("broadcast", { ...mailBody(), test: true, testTo: to }); toast("Test envoyé à " + to);
+  });
+  $("#mb-send-all").onclick = e => busy(e.target, async () => {
+    const b = mailBody(); if (!b.subject || !b.message) throw new Error("Ajoute un objet et un message");
+    let sent = 0, d;
+    do {
+      d = await api("broadcast", b); sent += d.sent;
+      const done = d.total - d.skipped_typos - d.remaining;
+      $("#mb-prog").style.width = Math.round(100 * done / Math.max(1, d.total - d.skipped_typos)) + "%";
+      $("#mb-status").textContent = `${done} / ${d.total - d.skipped_typos} envoyés` + (d.skipped_typos ? ` · ${d.skipped_typos} adresse(s) mal tapée(s) ignorée(s)` : "");
+      if (d.stop) { toast(d.stop, true); break; }
+    } while (d.remaining > 0 && d.sent > 0);
+    if (!d.stop) toast(`E-mail envoyé (${sent} cette fois)`);
+    loadMailInfo();
+  });
 
   /* ---------- en direct ---------- */
   async function loadStats(){
