@@ -420,7 +420,7 @@ tr.row.sel td{background:#f6f8ff}
         <div class="sub" style="margin-top:10px">${t.views||0} pages vues</div></div>
       <div class="panel"><div class="livehead"><b>Visiteurs, 7 jours</b></div>
         <div class="bars">${days.length ? days.map(x=>`<div title="${x.v} visiteurs"><i style="height:${Math.max(3,x.v*64/max)}px"></i>${x.d.slice(8)}/${x.d.slice(5,7)}</div>`).join("") : `<span class="sub">Pas encore de visites enregistrées.</span>`}</div>
-        <div class="srcs">${(d.sources||[]).map(s=>`<div><span>${esc(s.ref || "Direct / Instagram app")}</span><b>${s.v}</b></div>`).join("")}</div></div>`;
+        <div class="srcs">${(d.sources||[]).map(s=>`<div><span>${esc({tiktok:"TikTok",instagram:"Instagram","l.instagram.com":"Instagram",google:"Google"}[s.ref] || s.ref || "Direct / lien partagé")}</span><b>${s.v}</b></div>`).join("")}</div></div>`;
   }
   setInterval(() => { if (token && !document.hidden) loadStats(); }, 30000);
 

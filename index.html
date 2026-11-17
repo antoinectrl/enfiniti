@@ -597,7 +597,7 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
   function track(t){
     const n = (typeof cart !== "undefined" ? cart : []).reduce((a,c)=>a + c.qty * (c.type==="bundle" ? B[c.id].parts.length : 1), 0);
     try{ fetch("/api/track", { method:"POST", keepalive:true, headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ t, sid, n, p: document.getElementById("gate").hidden ? "/boutique" : "/accueil", r: document.referrer }) }).catch(()=>{}); }catch(e){}
+      body: JSON.stringify({ t, sid, n, p: document.getElementById("gate").hidden ? "/boutique" : "/accueil", r: document.referrer, u: new URLSearchParams(location.search).get("src") || new URLSearchParams(location.search).get("utm_source") || "" }) }).catch(()=>{}); }catch(e){}
   }
   setTimeout(() => track("view"), 300);
   setInterval(() => { if (!document.hidden) track("ping"); }, 60000);

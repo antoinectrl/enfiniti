@@ -14,6 +14,12 @@ exports.handler = async (event) => {
   if (!type || !sid) return json(204, {});
   let ref = "";
   try { const h = new URL(b.r || "").hostname.replace(/^www\./, ""); ref = h && !/enfiniti|pages\.dev|netlify/.test(h) ? h : ""; } catch (e) {}
+  // Les applis TikTok et Instagram masquent souvent la provenance : on les reconnaît à leur navigateur intégré, ou au lien ?src=
+  const ua = event.headers["user-agent"] || "";
+  const src = String(b.u || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30);
+  if (src) ref = src === "tiktok" ? "tiktok" : src === "instagram" || src === "ig" ? "instagram" : src;
+  else if (/tiktok|musical_ly|bytedance/i.test(ua)) ref = "tiktok";
+  else if (/instagram/i.test(ua) || /instagram\.com$/.test(ref)) ref = "instagram";
   await db.prepare("INSERT INTO events (ts, type, sid, path, ref, n) VALUES (?, ?, ?, ?, ?, ?)")
     .bind(Date.now(), type, sid, String(b.p || "/").slice(0, 60), ref.slice(0, 60), Math.max(0, Math.min(99, parseInt(b.n, 10) || 0))).run();
   return json(204, {});
