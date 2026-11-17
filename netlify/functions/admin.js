@@ -38,6 +38,35 @@ exports.handler = async (event) => {
         return json(200, out);
       }
 
+      case "settings": {   // page Réglages : voir ce qui est branché / enregistrer une clé
+        const KEYS = ["BREVO_API_KEY", "MAIL_FROM", "SENDCLOUD_PUBLIC_KEY", "SENDCLOUD_SECRET_KEY", "GMAIL_SCRIPT_URL"];
+        const db = event.env && event.env.DB;
+        if (body.set) {
+          if (!db) return json(500, { error: "Base de réglages indisponible" });
+          const entries = Object.entries(body.set).filter(([k, v]) => KEYS.includes(k) && typeof v === "string").map(([k, v]) => [k, v.trim()]);
+          for (const [k, v] of entries) {
+            if (v) await db.prepare("INSERT INTO settings (k, v, updated) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, updated = excluded.updated").bind(k, v, Date.now()).run();
+            else await db.prepare("DELETE FROM settings WHERE k = ?").bind(k).run();
+            process.env[k] = v;
+          }
+        }
+        const checks = {};
+        if (process.env.BREVO_API_KEY) {
+          const r = await fetch("https://api.brevo.com/v3/account", { headers: { "api-key": process.env.BREVO_API_KEY, accept: "application/json" } });
+          const d = await r.json().catch(() => ({}));
+          checks.brevo = r.ok ? { ok: true, info: (d.companyName || d.email || "compte Brevo") + (d.plan && d.plan[0] ? " · " + (d.plan[0].credits ?? "") + " crédits" : "") } : { ok: false, info: "Clé Brevo refusée" };
+        }
+        if (process.env.SENDCLOUD_PUBLIC_KEY && process.env.SENDCLOUD_SECRET_KEY) {
+          try { const u = await O.sendcloud("user"); checks.sendcloud = { ok: true, info: (u.user && (u.user.company_name || u.user.username)) || "compte Sendcloud" }; }
+          catch (e) { checks.sendcloud = { ok: false, info: "Clés Sendcloud refusées" }; }
+        }
+        if (process.env.GMAIL_SCRIPT_URL) {
+          try { checks.google = { ok: true, info: (await O.mailQuota()) + " envois possibles aujourd'hui" }; } catch (e) { checks.google = { ok: false, info: e.message }; }
+        }
+        const filled = Object.fromEntries(KEYS.map(k => [k, process.env[k] ? (k === "MAIL_FROM" ? process.env[k] : "•••• " + process.env[k].slice(-4)) : ""]));
+        return json(200, { filled, checks });
+      }
+
       case "mail-info": {  // nombre d'inscrits + envois Google restants aujourd'hui
         const subs = await O.subscribers();
         let quota = null; try { quota = await O.mailQuota(); } catch (e) {}

@@ -159,6 +159,7 @@ tr.row.sel td{background:#f6f8ff}
       <div class="conn" id="conn"></div>
       <div class="tools">
         <button class="btn" id="refresh" type="button" title="Actualiser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>Actualiser</button>
+        <button class="btn" id="open-settings" type="button">Réglages</button>
         <button class="btn" id="logout" type="button">Déconnexion</button>
       </div>
     </div>
@@ -215,6 +216,27 @@ tr.row.sel td{background:#f6f8ff}
   </main>
 </div>
 
+<div class="modal" id="settings" hidden><div style="width:min(620px,100%)">
+  <h2>Réglages</h2>
+  <form id="set-form" style="display:flex;flex-direction:column;gap:18px">
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>E-mails · Brevo</b><span class="pill" id="st-brevo"></span></div>
+      <div class="sub">brevo.com → crée ton compte gratuit → valide ton adresse d'envoi (Expéditeurs) → <b>SMTP & API → Clés API → Générer</b>.</div>
+      <label class="sub" for="BREVO_API_KEY">Clé API Brevo (xkeysib-…)</label><input class="search" style="width:100%" id="BREVO_API_KEY" autocomplete="off">
+      <label class="sub" for="MAIL_FROM">Adresse d'envoi validée dans Brevo</label><input class="search" style="width:100%" id="MAIL_FROM" type="email" autocomplete="off">
+    </section>
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>Étiquettes et points relais · Sendcloud</b><span class="pill" id="st-sendcloud"></span></div>
+      <div class="sub">sendcloud.com → adresse d'expédition + Mondial Relay et Colissimo activés → <b>Paramètres → Intégrations → Sendcloud API → Connecter</b> (coche Service Point).</div>
+      <label class="sub" for="SENDCLOUD_PUBLIC_KEY">Clé publique</label><input class="search" style="width:100%" id="SENDCLOUD_PUBLIC_KEY" autocomplete="off">
+      <label class="sub" for="SENDCLOUD_SECRET_KEY">Clé secrète</label><input class="search" style="width:100%" id="SENDCLOUD_SECRET_KEY" autocomplete="off">
+    </section>
+    <details><summary class="sub" style="cursor:pointer">Option : envoyer avec ton Gmail (script Google)</summary>
+      <label class="sub" for="GMAIL_SCRIPT_URL" style="display:block;margin-top:10px">URL de l'application Web Google</label><input class="search" style="width:100%" id="GMAIL_SCRIPT_URL" autocomplete="off"></details>
+    <div class="sub">Laisse un champ vide pour garder la clé actuelle. Les clés ne sont jamais réaffichées en entier.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" type="button" id="set-close">Fermer</button><button class="btn dark" type="submit">Enregistrer et vérifier</button></div>
+  </form>
+</div></div>
 <div class="modal" id="modal" hidden><div><h2 id="m-title"></h2><div id="m-body"></div><button class="btn dark" id="m-close" type="button" style="align-self:flex-end">Fermer</button></div></div>
 <div class="toast" id="toast" role="status"></div>
 
@@ -375,6 +397,23 @@ tr.row.sel td{background:#f6f8ff}
         o.items.map(i=>`${i.qty}x ${i.name} ${i.detail}`).join(" / "), (o.total/100).toFixed(2).replace(".",","), LABELS[o.status], o.tracking]));
     const csv = "﻿" + rows.map(r => r.map(v => `"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = `commandes-dript-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  };
+
+  /* ---------- réglages ---------- */
+  const SKEYS = ["BREVO_API_KEY","MAIL_FROM","SENDCLOUD_PUBLIC_KEY","SENDCLOUD_SECRET_KEY","GMAIL_SCRIPT_URL"];
+  function showSettings(d){
+    SKEYS.forEach(k => { const el = $("#"+k); el.value = ""; el.placeholder = d.filled[k] ? "Enregistrée : " + d.filled[k] : "Non renseignée"; });
+    const pill = (id, c, label) => { const el = $(id); if (!c){ el.className = "pill s-annulee"; el.textContent = label || "Non connecté"; } else { el.className = "pill " + (c.ok ? "s-expediee" : "s-a_preparer"); el.textContent = c.info; } };
+    pill("#st-brevo", d.checks.brevo || (d.checks.google ? { ok:true, info:"Envoi via Gmail" } : null));
+    pill("#st-sendcloud", d.checks.sendcloud);
+  }
+  $("#open-settings").onclick = async () => { $("#settings").hidden = false; try{ showSettings(await api("settings", {})); }catch(e){ toast(e.message,true); } };
+  $("#set-close").onclick = () => $("#settings").hidden = true;
+  $("#set-form").onsubmit = async e => {
+    e.preventDefault(); const btn = e.submitter || $("#set-form button[type=submit]");
+    const set = {}; SKEYS.forEach(k => { const v = $("#"+k).value.trim(); if (v) set[k] = v; });
+    await busy(btn, async () => { const d = await api("settings", { set }); showSettings(d);
+      toast(Object.keys(set).length ? "Réglages enregistrés" : "Vérification faite"); await load(); });
   };
 
   /* ---------- e-mail à la liste ---------- */

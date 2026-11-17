@@ -17,6 +17,14 @@ export async function onRequest(ctx) {
   // Les variables Cloudflare (clés Stripe, Sendcloud, Brevo…) deviennent process.env pour le code existant.
   for (const [k, v] of Object.entries(env)) if (typeof v === "string") process.env[k] = v;
 
+  // Clés collées dans l'admin (page Réglages) : utilisées si elles ne sont pas déjà dans Cloudflare.
+  if (env.DB) {
+    try {
+      const rows = (await env.DB.prepare("SELECT k, v FROM settings").all()).results || [];
+      for (const r of rows) if (!(typeof env[r.k] === "string" && env[r.k])) process.env[r.k] = r.v;
+    } catch (e) {}
+  }
+
   const name = Array.isArray(params.route) ? params.route[0] : params.route;
   const fn = HANDLERS[name];
   if (!fn) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404, headers: { "Content-Type": "application/json" } });
