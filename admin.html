@@ -231,6 +231,21 @@ tr.row.sel td{background:#f6f8ff}
       <label class="sub" for="SENDCLOUD_PUBLIC_KEY">Clé publique</label><input class="search" style="width:100%" id="SENDCLOUD_PUBLIC_KEY" autocomplete="off">
       <label class="sub" for="SENDCLOUD_SECRET_KEY">Clé secrète</label><input class="search" style="width:100%" id="SENDCLOUD_SECRET_KEY" autocomplete="off">
     </section>
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>Boutique et mentions légales</b></div>
+      <label class="sub" for="INSTAGRAM_URL">Lien de ton Instagram</label><input class="search" style="width:100%" id="INSTAGRAM_URL" placeholder="https://instagram.com/tonpseudo">
+      <label class="sub" for="CONTACT_EMAIL">E-mail de contact (affiché aux clients, reçoit les réponses)</label><input class="search" style="width:100%" id="CONTACT_EMAIL" type="email">
+      <label class="sub" for="LEGAL_NAME">Nom et prénom (ou nom de l'entreprise)</label><input class="search" style="width:100%" id="LEGAL_NAME">
+      <label class="sub" for="LEGAL_SIRET">SIRET</label><input class="search" style="width:100%" id="LEGAL_SIRET" inputmode="numeric">
+      <label class="sub" for="LEGAL_ADDRESS">Adresse postale</label><input class="search" style="width:100%" id="LEGAL_ADDRESS">
+      <label class="sub" for="LEGAL_MEDIATOR">Médiateur de la consommation (nom et site)</label><input class="search" style="width:100%" id="LEGAL_MEDIATOR" placeholder="ex. CM2C, www.cm2c.net">
+    </section>
+    <section style="display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>Paiement réel (Stripe live)</b><span class="pill" id="st-stripe"></span></div>
+      <div class="sub">Stripe → désactive le « mode test » → <b>Développeurs → Clés API → Créer une clé restreinte</b>, nommée « Boutique DRIPT », avec : <b>Checkout Sessions : Écriture</b>, <b>Customers : Écriture</b>, <b>Webhook Endpoints : Écriture</b>. Colle la clé <code>rk_live_…</code> ici : je crée le webhook et je copie ta liste d'inscrits tout seul.</div>
+      <label class="sub" for="STRIPE_LIVE_KEY">Clé live</label><input class="search" style="width:100%" id="STRIPE_LIVE_KEY" autocomplete="off">
+      <div class="sub" id="mig-status"></div>
+    </section>
     <details><summary class="sub" style="cursor:pointer">Option : envoyer avec ton Gmail (script Google)</summary>
       <label class="sub" for="GMAIL_SCRIPT_URL" style="display:block;margin-top:10px">URL de l'application Web Google</label><input class="search" style="width:100%" id="GMAIL_SCRIPT_URL" autocomplete="off"></details>
     <div class="sub">Laisse un champ vide pour garder la clé actuelle. Les clés ne sont jamais réaffichées en entier.</div>
@@ -400,20 +415,27 @@ tr.row.sel td{background:#f6f8ff}
   };
 
   /* ---------- réglages ---------- */
-  const SKEYS = ["BREVO_API_KEY","MAIL_FROM","SENDCLOUD_PUBLIC_KEY","SENDCLOUD_SECRET_KEY","GMAIL_SCRIPT_URL"];
+  const SKEYS = ["BREVO_API_KEY","MAIL_FROM","SENDCLOUD_PUBLIC_KEY","SENDCLOUD_SECRET_KEY","GMAIL_SCRIPT_URL","INSTAGRAM_URL","CONTACT_EMAIL","LEGAL_NAME","LEGAL_SIRET","LEGAL_ADDRESS","LEGAL_MEDIATOR","STRIPE_LIVE_KEY"];
+  const PUBLIC_KEYS = ["MAIL_FROM","INSTAGRAM_URL","CONTACT_EMAIL","LEGAL_NAME","LEGAL_SIRET","LEGAL_ADDRESS","LEGAL_MEDIATOR"];
   function showSettings(d){
-    SKEYS.forEach(k => { const el = $("#"+k); el.value = ""; el.placeholder = d.filled[k] ? "Enregistrée : " + d.filled[k] : "Non renseignée"; });
+    SKEYS.forEach(k => { const el = $("#"+k); if (PUBLIC_KEYS.includes(k)) { el.value = d.filled[k] || ""; } else { el.value = ""; el.placeholder = d.filled[k] ? "Enregistrée : " + d.filled[k] : "Non renseignée"; } });
     const pill = (id, c, label) => { const el = $(id); if (!c){ el.className = "pill s-annulee"; el.textContent = label || "Non connecté"; } else { el.className = "pill " + (c.ok ? "s-expediee" : "s-a_preparer"); el.textContent = c.info; } };
     pill("#st-brevo", d.checks.brevo || (d.checks.google ? { ok:true, info:"Envoi via Gmail" } : null));
     pill("#st-sendcloud", d.checks.sendcloud);
+    const sp = $("#st-stripe"); sp.className = "pill " + (d.checks.stripe && d.checks.stripe.live ? "s-expediee" : "s-a_preparer"); sp.textContent = d.checks.stripe ? d.checks.stripe.info : "";
   }
   $("#open-settings").onclick = async () => { $("#settings").hidden = false; try{ showSettings(await api("settings", {})); }catch(e){ toast(e.message,true); } };
   $("#set-close").onclick = () => $("#settings").hidden = true;
   $("#set-form").onsubmit = async e => {
     e.preventDefault(); const btn = e.submitter || $("#set-form button[type=submit]");
-    const set = {}; SKEYS.forEach(k => { const v = $("#"+k).value.trim(); if (v) set[k] = v; });
+    const set = {}; SKEYS.forEach(k => { const v = $("#"+k).value.trim(); if (v || PUBLIC_KEYS.includes(k)) set[k] = v; });
     await busy(btn, async () => { const d = await api("settings", { set }); showSettings(d);
-      toast(Object.keys(set).length ? "Réglages enregistrés" : "Vérification faite"); await load(); });
+      toast("Réglages enregistrés"); await load();
+      if (set.STRIPE_LIVE_KEY && d.checks.stripe && d.checks.stripe.live) {
+        let r, n = 0; $("#mig-status").textContent = "Copie de ta liste d'inscrits vers le compte réel…";
+        do { r = await api("migrate-list", {}); n += r.copied; $("#mig-status").textContent = `Liste copiée : ${n} inscrits${r.remaining ? `, encore ${r.remaining}…` : " ✓"}`; } while (r.remaining > 0 && r.copied > 0);
+        loadMailInfo();
+      } });
   };
 
   /* ---------- e-mail à la liste ---------- */

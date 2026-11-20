@@ -705,28 +705,36 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
   };
   /* ---------- pages légales ---------- */
   const T = t => `<span class="todo">${t}</span>`;
-  const LEGAL = {
+  const V = (k, ph) => C.legal && C.legal[k] ? escH(C.legal[k]) : T(ph);
+  const buildLegal = () => ({
     mentions: ["Mentions légales", `
-      <h3>Éditeur du site</h3><p>${T("Prénom Nom ou nom de l'entreprise")}, entrepreneur individuel (micro-entreprise).<br>SIRET : ${T("000 000 000 00000")}<br>Adresse : ${T("adresse postale")}<br>Contact : ${C.contact}</p>
-      <h3>Hébergement</h3><p>Netlify, Inc., 512 2nd Street, Suite 200, San Francisco, CA 94107, États-Unis.</p>
+      <h3>Éditeur du site</h3><p>${V("name", "Prénom Nom ou nom de l'entreprise")}, entrepreneur individuel (micro-entreprise).<br>SIRET : ${V("siret", "000 000 000 00000")}<br>Adresse : ${V("address", "adresse postale")}<br>Contact : ${C.contact}</p>
+      <h3>Hébergement</h3><p>Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, États-Unis.</p>
       <h3>Paiement</h3><p>Les paiements sont traités par Stripe Payments Europe Ltd. DRIPT n'a jamais accès à tes données bancaires.</p>
       <h3>Données personnelles</h3><p>Les informations de commande (nom, adresse, e-mail, téléphone) servent uniquement à traiter et livrer ta commande. Ton e-mail d'inscription sert uniquement à te prévenir des drops DRIPT. Tu peux demander leur suppression à ${C.contact}.</p>`],
     cgv: ["Conditions de vente", `
-      <h3>Produits et prix</h3><p>Les prix sont indiqués en euros TTC${T(" (TVA non applicable, art. 293 B du CGI, si tu es en franchise)")}. Les frais de livraison (${eur(C.shipping.amount)}, offerts dès ${C.shipping.freeFrom} pièces) sont ajoutés avant le paiement.</p>
+      <h3>Produits et prix</h3><p>Les prix sont indiqués en euros TTC (TVA non applicable, art. 293 B du CGI). Les frais de livraison (${eur(C.shipping.amount)}, offerts dès ${C.shipping.freeFrom} pièces) sont ajoutés avant le paiement.</p>
       <h3>Commande et paiement</h3><p>La commande est validée après le paiement sur la page sécurisée Stripe. Un reçu est envoyé par e-mail. Les quantités sont limitées : une commande ne peut porter que sur le stock disponible au moment du paiement.</p>
       <h3>Livraison</h3><p>Expédition sous 48 h ouvrées en envoi suivi, livraison en 2 à 5 jours ouvrés en France métropolitaine, Belgique, Luxembourg, Suisse et Monaco.</p>
       <h3>Droit de rétractation</h3><p>Tu disposes de 14 jours à compter de la réception pour te rétracter, sans justification, en écrivant à ${C.contact}. L'article doit être renvoyé non porté, avec son étiquette, sous 14 jours. Le remboursement, frais de livraison initiaux compris, intervient sous 14 jours après réception du retour. Les frais de retour sont à ta charge.</p>
       <h3>Garanties</h3><p>Les produits bénéficient de la garantie légale de conformité (art. L217-3 et suivants du Code de la consommation) et de la garantie des vices cachés (art. 1641 et suivants du Code civil).</p>
-      <h3>Litiges</h3><p>En cas de litige, contacte-nous d'abord à ${C.contact}. Tu peux aussi recourir gratuitement à un médiateur de la consommation : ${T("nom et site du médiateur")}.</p>`],
+      <h3>Litiges</h3><p>En cas de litige, contacte-nous d'abord à ${C.contact}. Tu peux aussi recourir gratuitement à un médiateur de la consommation : ${V("mediator", "nom et site du médiateur")}.</p>`],
     retours: ["Livraison et retours", `
       <h3>Livraison</h3><p>${eur(C.shipping.amount)} par commande, offerte dès ${C.shipping.freeFrom} pièces, en envoi suivi. Expédition sous 48 h ouvrées, livraison en 2 à 5 jours ouvrés. Tu reçois le numéro de suivi par e-mail.</p>
       <h3>Retours</h3><p>Tu as 14 jours après réception pour retourner une pièce non portée, avec son étiquette. Écris à ${C.contact} ou sur Instagram avec ton numéro de commande, on t'envoie l'adresse de retour. Le remboursement est fait sur ton moyen de paiement sous 14 jours après réception.</p>`]
-  };
-  function openLegal(k){ $("#l-title").textContent = LEGAL[k][0]; $("#l-body").innerHTML = LEGAL[k][1]; openSheet($("#lsheet")); }
+  });
+  function openLegal(k){ const L = buildLegal(); $("#l-title").textContent = L[k][0]; $("#l-body").innerHTML = L[k][1]; openSheet($("#lsheet")); }
   document.addEventListener("click", e => { const a = e.target.closest("[data-legal]"); if (a){ e.preventDefault(); openLegal(a.dataset.legal); } });
 
   if (location.hash === "#panier") { renderCart(); openSheet($("#csheet")); }
-  if (LEGAL[location.hash.slice(1)]) openLegal(location.hash.slice(1));
+  if (buildLegal()[location.hash.slice(1)]) openLegal(location.hash.slice(1));
+  /* Infos réglées dans l'admin : Instagram, contact, mentions légales */
+  fetch("/api/config").then(r => r.ok ? r.json() : null).then(cfg => {
+    if (!cfg) return;
+    if (cfg.instagram) $$(".js-insta").forEach(a => a.href = cfg.instagram);
+    if (cfg.contact) C.contact = cfg.contact;
+    C.legal = cfg.legal;
+  }).catch(()=>{});
   renderCart();
   refreshStock(); setInterval(() => { if (!document.hidden) refreshStock(); }, 30000);
 })();

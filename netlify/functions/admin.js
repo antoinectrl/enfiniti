@@ -1,6 +1,6 @@
 /* /api/admin — interface de gestion des commandes (protégée par ADMIN_PASSWORD).
    Actions : list, label, labels-pdf, ship, resend, status, methods. */
-const { json } = require("../../lib/shop.js");
+const { json, IS_LIVE } = require("../../lib/shop.js");
 const O = require("../../lib/orders.js");
 
 exports.handler = async (event) => {
@@ -15,7 +15,7 @@ exports.handler = async (event) => {
         return json(200, { orders: await O.listOrders(), config: {
           sendcloud: !!(process.env.SENDCLOUD_PUBLIC_KEY && process.env.SENDCLOUD_SECRET_KEY),
           mail: O.mailReady(), google: !!process.env.GMAIL_SCRIPT_URL,
-          live: /_live_/.test(process.env.STRIPE_SECRET_KEY || process.env.stripe || "") } });
+          live: IS_LIVE() } });
 
       case "stats": {     // tableau de bord en direct (visites : base Cloudflare D1 ; paniers et commandes : Stripe)
         const db = event.env && event.env.DB, now = Date.now();
@@ -39,15 +39,41 @@ exports.handler = async (event) => {
       }
 
       case "settings": {   // page Réglages : voir ce qui est branché / enregistrer une clé
-        const KEYS = ["BREVO_API_KEY", "MAIL_FROM", "SENDCLOUD_PUBLIC_KEY", "SENDCLOUD_SECRET_KEY", "GMAIL_SCRIPT_URL"];
+        const KEYS = ["BREVO_API_KEY", "MAIL_FROM", "SENDCLOUD_PUBLIC_KEY", "SENDCLOUD_SECRET_KEY", "GMAIL_SCRIPT_URL",
+          "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR", "STRIPE_LIVE_KEY"];
+        const PUBLIC = ["MAIL_FROM", "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR"];
+        const save = async (k, v) => {
+          if (v) await db.prepare("INSERT INTO settings (k, v, updated) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, updated = excluded.updated").bind(k, v, Date.now()).run();
+          else await db.prepare("DELETE FROM settings WHERE k = ?").bind(k).run();
+          process.env[k] = v;
+        };
         const db = event.env && event.env.DB;
         if (body.set) {
           if (!db) return json(500, { error: "Base de réglages indisponible" });
           const entries = Object.entries(body.set).filter(([k, v]) => KEYS.includes(k) && typeof v === "string").map(([k, v]) => [k, v.trim()]);
           for (const [k, v] of entries) {
-            if (v) await db.prepare("INSERT INTO settings (k, v, updated) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, updated = excluded.updated").bind(k, v, Date.now()).run();
-            else await db.prepare("DELETE FROM settings WHERE k = ?").bind(k).run();
-            process.env[k] = v;
+            if (k === "STRIPE_LIVE_KEY" && v) {
+              // Passage en paiement réel : on vérifie la clé et on crée le webhook live avant d'enregistrer.
+              if (!/^(rk|sk)_live_/.test(v)) return json(400, { error: "Ce n'est pas une clé live (elle doit commencer par rk_live_ ou sk_live_)." });
+              const call = async (path, form) => {
+                const r = await fetch("https://api.stripe.com/v1/" + path, { method: form ? "POST" : "GET",
+                  headers: { Authorization: "Bearer " + v, "Content-Type": "application/x-www-form-urlencoded", "Stripe-Version": "2026-10-28.endive" }, body: form });
+                const d = await r.json(); if (!r.ok) throw new Error(d.error && d.error.message || "Stripe"); return d;
+              };
+              try { await call("checkout/sessions?limit=1"); } catch (e) { return json(400, { error: "Clé refusée par Stripe : " + e.message }); }
+              const host = event.headers["x-forwarded-host"] || event.headers.host;
+              const url = `https://${host}/api/webhook`;
+              let wh;
+              try {
+                const existing = await call("webhook_endpoints?limit=100");
+                for (const w of existing.data.filter(w => w.url === url))   // ancien webhook live vers la même adresse : remplacé
+                  await fetch(`https://api.stripe.com/v1/webhook_endpoints/${w.id}`, { method: "DELETE", headers: { Authorization: "Bearer " + v } });
+                const ev = ["checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed", "charge.refunded"];
+                wh = await call("webhook_endpoints", `url=${encodeURIComponent(url)}&api_version=2026-10-28.endive&description=${encodeURIComponent("Boutique DRIPT")}&` + ev.map(e => "enabled_events[]=" + e).join("&"));
+              } catch (e) { return json(400, { error: "La clé doit aussi avoir la permission « Webhook Endpoints : Écriture ». Détail : " + e.message }); }
+              await save("STRIPE_WEBHOOK_SECRET_LIVE", wh.secret);
+            }
+            await save(k, v);
           }
         }
         const checks = {};
@@ -63,8 +89,32 @@ exports.handler = async (event) => {
         if (process.env.GMAIL_SCRIPT_URL) {
           try { checks.google = { ok: true, info: (await O.mailQuota()) + " envois possibles aujourd'hui" }; } catch (e) { checks.google = { ok: false, info: e.message }; }
         }
-        const filled = Object.fromEntries(KEYS.map(k => [k, process.env[k] ? (k === "MAIL_FROM" ? process.env[k] : "•••• " + process.env[k].slice(-4)) : ""]));
+        checks.stripe = { ok: true, live: IS_LIVE(), info: IS_LIVE() ? "Paiement réel actif" : "Mode test (aucun vrai paiement)" };
+        const filled = Object.fromEntries(KEYS.map(k => [k, process.env[k] ? (PUBLIC.includes(k) ? process.env[k] : "•••• " + process.env[k].slice(-4)) : ""]));
         return json(200, { filled, checks });
+      }
+
+      case "migrate-list": {   // copie la liste d'inscrits du Stripe de test vers le Stripe réel (par paquets)
+        const test = process.env.STRIPE_SECRET_KEY || process.env.stripe;
+        if (!IS_LIVE() || !test || /_live_/.test(test)) return json(400, { error: "Rien à copier (le paiement réel n'est pas actif)." });
+        const tcall = async (path, form) => {
+          const r = await fetch("https://api.stripe.com/v1/" + path, { method: form ? "POST" : "GET", headers: { Authorization: "Bearer " + test, "Content-Type": "application/x-www-form-urlencoded" }, body: form });
+          const d = await r.json(); if (!r.ok) throw new Error(d.error && d.error.message); return d;
+        };
+        const all = []; let page = null;
+        for (let i = 0; i < 5; i++) {
+          const r = await tcall(`customers/search?limit=100&query=${encodeURIComponent("metadata['source']:'liste-black-friday' AND -metadata['copie_live']:'1'")}` + (page ? `&page=${encodeURIComponent(page)}` : ""));
+          all.push(...r.data); if (!r.has_more) break; page = r.next_page;
+        }
+        const todo = all.filter(c => c.email && !/@example\.com$/.test(c.email));
+        let copied = 0;
+        for (const c of todo.slice(0, 12)) {
+          const ex = await stripe(`customers?limit=1&email=${encodeURIComponent(c.email)}`);
+          if (!ex.data.length) await stripe("customers", { method: "POST", body: { email: c.email, metadata: { source: "liste-black-friday" } } });
+          await tcall(`customers/${c.id}`, "metadata[copie_live]=1");
+          copied++;
+        }
+        return json(200, { copied, remaining: Math.max(0, todo.length - copied) });
       }
 
       case "mail-info": {  // nombre d'inscrits + envois Google restants aujourd'hui

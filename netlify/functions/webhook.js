@@ -5,7 +5,7 @@
    - checkout.session.async_payment_failed : paiement différé échoué → pièces remises en vente.
    - charge.refunded (remboursement total) : pièces remises en vente automatiquement. */
 const crypto = require("crypto");
-const { stripe, readUsage, json } = require("../../lib/shop.js");
+const { stripe, readUsage, json, IS_LIVE } = require("../../lib/shop.js");
 const { getOrder, sendConfirmation } = require("../../lib/orders.js");
 
 function verify(raw, header, secret) {
@@ -26,7 +26,7 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Méthode non autorisée" });
   const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString("utf8") : (event.body || "");
   const sig = event.headers["stripe-signature"] || event.headers["Stripe-Signature"];
-  if (!verify(raw, sig, process.env.STRIPE_WEBHOOK_SECRET)) return json(400, { error: "Signature invalide" });
+  if (!verify(raw, sig, IS_LIVE() ? process.env.STRIPE_WEBHOOK_SECRET_LIVE : process.env.STRIPE_WEBHOOK_SECRET)) return json(400, { error: "Signature invalide" });
 
   const evt = JSON.parse(raw);
   const obj = evt.data && evt.data.object;

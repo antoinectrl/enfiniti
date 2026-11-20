@@ -1,6 +1,6 @@
 /* POST /api/checkout — crée la page de paiement Stripe à partir du panier.
    Les prix viennent de catalog.js (jamais du navigateur) et le stock est vérifié en direct. */
-const { CATALOG, SIZES, byId, bundleById, stripe, packUsage, remainingStock, json, KEY } = require("../../lib/shop.js");
+const { CATALOG, SIZES, byId, bundleById, stripe, packUsage, remainingStock, json, KEY, IS_LIVE } = require("../../lib/shop.js");
 const { servicePoint } = require("../../lib/orders.js");
 
 const valid = (pid, pick) => byId[pid] && pick && byId[pid].stock[pick.color] && SIZES.includes(pick.size) ? byId[pid] : null;
@@ -8,7 +8,7 @@ const valid = (pid, pick) => byId[pid] && pick && byId[pid].stock[pick.color] &&
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Méthode non autorisée" });
   if (!KEY()) return json(503, { error: "Le paiement n'est pas encore activé" });
-  if (Date.now() < new Date(CATALOG.dropDate).getTime() && !process.env.ALLOW_EARLY_CHECKOUT)
+  if (Date.now() < new Date(CATALOG.dropDate).getTime() && !(process.env.ALLOW_EARLY_CHECKOUT && !IS_LIVE()))   // en paiement réel, jamais avant l'heure
     return json(403, { error: "La boutique ouvre le jeudi 26 novembre à 18 h" });
   if (CATALOG.dropEnd && Date.now() > new Date(CATALOG.dropEnd).getTime())
     return json(403, { error: "Le Black Friday est terminé" });
