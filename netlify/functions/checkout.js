@@ -9,7 +9,10 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Méthode non autorisée" });
   if (!KEY()) return json(503, { error: "Le paiement n'est pas encore activé" });
   if (Date.now() < new Date(CATALOG.dropDate).getTime() && !(process.env.ALLOW_EARLY_CHECKOUT && !IS_LIVE()))   // en paiement réel, jamais avant l'heure
-    return json(403, { error: "La boutique ouvre le jeudi 26 novembre à 18 h" });
+    return json(403, { error: "La boutique ouvre à 18 h" });
+  // Tant que le paiement réel n'est pas activé, seuls les aperçus (mot de passe) peuvent payer en mode test.
+  if (!IS_LIVE() && event.headers["x-dript-preview"] !== "1")
+    return json(503, { error: "Le paiement ouvre dans quelques minutes, réessaie très vite." });
   if (CATALOG.dropEnd && Date.now() > new Date(CATALOG.dropEnd).getTime())
     return json(403, { error: "Le Black Friday est terminé" });
 

@@ -7,7 +7,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="DRIPT — Black Friday, du 26 au 30 novembre. Hoodies épais, zips et joggings en petite série.">
 <meta property="og:title" content="DRIPT — Black Friday">
-<meta property="og:description" content="Hoodies épais, zips et joggings. Du jeudi 26 novembre 18 h au lundi 30 novembre.">
+<meta property="og:description" content="Hoodies épais, zips et joggings. Du samedi 21 novembre 18 h au lundi 30 novembre.">
 <meta property="og:image" content="img/gate.jpg">
 <meta name="theme-color" content="#111111">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111'/%3E%3Ctext x='5' y='23' font-family='Arial Black,Arial' font-weight='900' font-size='19' fill='%23fff'%3ED%3C/text%3E%3Ccircle cx='25' cy='21' r='2.6' fill='%23d4271d'/%3E%3C/svg%3E">
@@ -293,7 +293,7 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
   <main>
     <span class="small" id="gate-kicker">Bientôt</span>
     <h1>Black<br>Friday</h1>
-    <p class="when" id="gate-when">Jeudi 26 novembre, 18 h.</p>
+    <p class="when" id="gate-when">Ce soir, 18 h.</p>
     <form id="gate-form" novalidate>
       <label class="small" for="gate-email" style="position:absolute;left:-9999px">E-mail</label>
       <input id="gate-email" type="email" placeholder="Ton e-mail" autocomplete="email" required>
@@ -387,7 +387,7 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
     <div class="wrap faq">
       <div class="sec-head" style="margin:0"><h2>Aide</h2></div>
       <div>
-        <details><summary>Jusqu'à quand dure le Black Friday ?</summary><p>Du jeudi 26 novembre à 18 h au lundi 30 novembre à 23 h 59, ou jusqu'à épuisement du stock. Les quantités sont limitées et il n'y aura pas de réassort.</p></details>
+        <details><summary>Jusqu'à quand dure le Black Friday ?</summary><p>Du samedi 21 novembre à 18 h au lundi 30 novembre à 23 h 59, ou jusqu'à épuisement du stock. Les quantités sont limitées et il n'y aura pas de réassort.</p></details>
         <details><summary>Quelle taille choisir ?</summary><p>Toutes les pièces sont en coupe ample et unisexe. Prends ta taille habituelle pour un porté oversize, une taille en dessous pour un porté plus près du corps. En cas de doute, écris-nous sur Instagram.</p></details>
         <details><summary>Quels sont les délais de livraison ?</summary><p>Les commandes partent sous 48 h ouvrées en envoi suivi, livrées en 2 à 5 jours ouvrés en France. La livraison en point relais Mondial Relay coûte 5 € et elle est offerte dès 2 pièces achetées (lots compris). À domicile, c'est 7 €.</p></details>
         <details><summary>Comment payer ?</summary><p>Le paiement se fait sur une page sécurisée Stripe : carte bancaire, Apple Pay ou Google Pay. Tu reçois un e-mail de confirmation de commande, puis un e-mail avec le suivi quand ton colis part.</p></details>
@@ -695,7 +695,7 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
     const btn = $("#c-pay"), err = $("#c-err");
     btn.disabled = true; btn.textContent = "Redirection…"; err.textContent = "";
     try{
-      const r = await fetch("/api/checkout",{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ items: cart, shipping: { mode: dlv.mode, point_id: dlv.point && dlv.point.id } }) });
+      const r = await fetch("/api/checkout",{ method:"POST", headers:{ "Content-Type":"application/json", "X-Dript-Preview": store.get("dript-unlock") === "1" ? "1" : "0" }, body: JSON.stringify({ items: cart, shipping: { mode: dlv.mode, point_id: dlv.point && dlv.point.id } }) });
       const d = await r.json().catch(()=>({}));
       if (r.ok && d.url){ location.href = d.url; return; }
       err.textContent = d.error || "Le paiement n'est pas disponible pour le moment.";

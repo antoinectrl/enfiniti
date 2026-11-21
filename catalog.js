@@ -15,7 +15,7 @@
        Le point relais s'active tout seul dès que Sendcloud est connecté. */
     shipping: { amount: 500, freeFrom: 2, label: "Point relais", relayCarrier: "mondial_relay",
                 home: { amount: 700, label: "À domicile" } },
-    dropDate: "2026-11-26T18:00:00+01:00",                   // ouverture : jeudi 26 novembre, 18 h (veille du Black Friday)
+    dropDate: "2026-11-21T18:00:00+01:00",                   // ouverture : samedi 21 novembre, 18 h
     dropEnd:  "2026-11-30T23:59:00+01:00",                   // fin : lundi 30 novembre (Cyber Monday), 23 h 59
     contact:  "contact@tondomaine.fr",                       // e-mail affiché dans les pages légales
 
