@@ -577,6 +577,8 @@ details p{margin:0 0 18px;max-width:64ch;color:var(--ink-2)}
 
   /* ---------- cart ---------- */
   let cart = []; try{ cart = JSON.parse(store.get("dript-cart") || "[]"); }catch(e){ cart = []; }
+  /* Retire du panier les articles qui ne sont plus en vente (ex. offre supprimée). */
+  cart = (Array.isArray(cart) ? cart : []).filter(it => it && (it.type === "bundle" ? B[it.id] : P[it.id]));
   if (thanks){
     cart = []; store.set("dript-cart","[]"); $("#thanks").hidden = false;
     const sid = new URLSearchParams(location.search).get("session_id");

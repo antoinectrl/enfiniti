@@ -52,9 +52,6 @@
 
     /* Ensembles : chaque pièce garde sa propre taille. */
     bundles: [
-      { id: "pack-2hoodies", name: "Lot de 2 hoodies épais", price: 5900, compareAt: null,
-        image: "img/room-duo.jpg", parts: ["hoodie", "hoodie"],
-        description: "Deux hoodies épais, une taille pour chacun. Un pour toi, un à offrir. Livraison offerte." },
       { id: "pack-hoodie-zip", name: "Hoodie épais + zip", price: 5500, compareAt: null,
         image: "img/hoodie-front.jpg", parts: ["hoodie", "zip"],
         description: "Le hoodie épais et le zip à capuche, chacun dans ta taille." },
