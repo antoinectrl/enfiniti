@@ -1,6 +1,6 @@
 /* /api/admin — interface de gestion des commandes (protégée par ADMIN_PASSWORD).
    Actions : list, label, labels-pdf, ship, resend, status, methods. */
-const { json, IS_LIVE } = require("../../lib/shop.js");
+const { json, IS_LIVE, stripe } = require("../../lib/shop.js");
 const O = require("../../lib/orders.js");
 
 exports.handler = async (event) => {
@@ -103,10 +103,10 @@ exports.handler = async (event) => {
         };
         const all = []; let page = null;
         for (let i = 0; i < 5; i++) {
-          const r = await tcall(`customers/search?limit=100&query=${encodeURIComponent("metadata['source']:'liste-black-friday' AND -metadata['copie_live']:'1'")}` + (page ? `&page=${encodeURIComponent(page)}` : ""));
+          const r = await tcall(`customers/search?limit=100&query=${encodeURIComponent("metadata['source']:'liste-black-friday'")}` + (page ? `&page=${encodeURIComponent(page)}` : ""));
           all.push(...r.data); if (!r.has_more) break; page = r.next_page;
         }
-        const todo = all.filter(c => c.email && !/@example\.com$/.test(c.email));
+        const todo = all.filter(c => c.email && !/@example\.com$/.test(c.email) && !(c.metadata && c.metadata.copie_live === "1"));
         let copied = 0;
         for (const c of todo.slice(0, 12)) {
           const ex = await stripe(`customers?limit=1&email=${encodeURIComponent(c.email)}`);
@@ -115,6 +115,16 @@ exports.handler = async (event) => {
           copied++;
         }
         return json(200, { copied, remaining: Math.max(0, todo.length - copied) });
+      }
+
+      case "import-emails": {   // ajoute une liste d'e-mails comme inscrits sur le compte actuel (12 max par appel)
+        const emails = (Array.isArray(body.emails) ? body.emails : []).slice(0, 12).map(e => String(e).trim().toLowerCase()).filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e));
+        let added = 0;
+        for (const email of emails) {
+          const ex = await stripe(`customers?limit=1&email=${encodeURIComponent(email)}`);
+          if (!ex.data.length) { await stripe("customers", { method: "POST", body: { email, metadata: { source: "liste-black-friday" } } }); added++; }
+        }
+        return json(200, { added, seen: emails.length });
       }
 
       case "mail-info": {  // nombre d'inscrits + envois Google restants aujourd'hui
