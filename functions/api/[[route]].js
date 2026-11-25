@@ -10,8 +10,9 @@ import track from "../../netlify/functions/track.js";
 import relais from "../../netlify/functions/relais.js";
 import mcp from "../../netlify/functions/mcp.js";
 import config from "../../netlify/functions/config.js";
+import desinscription from "../../netlify/functions/desinscription.js";
 
-const HANDLERS = { checkout, stock, subscribe, webhook, admin, order, track, relais, mcp, config };
+const HANDLERS = { checkout, stock, subscribe, webhook, admin, order, track, relais, mcp, config, desinscription };
 
 export async function onRequest(ctx) {
   const { request, env, params } = ctx;
