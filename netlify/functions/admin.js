@@ -134,7 +134,7 @@ exports.handler = async (event) => {
 
       case "packlink-drafts": {   // crée les envois Packlink en brouillon (panier non payé)
         const PL = require("../../lib/packlink.js");
-        const ids = (body.ids || []).slice(0, 8), done = [], errors = [];
+        const ids = (body.ids || []).slice(0, 4), done = [], errors = [];
         for (const id of ids) {
           try {
             const o = await O.getOrder(id);

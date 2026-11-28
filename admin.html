@@ -407,7 +407,7 @@ tr.row.sel td{background:#f6f8ff}
       if (b.dataset.bulk==="ship") busy(b, async () => { for (let i=0;i<ids.length;i+=10) await ship(ids.slice(i,i+10)); });
       if (b.dataset.bulk==="pick") pickList(picked);
       if (b.dataset.bulk==="packlink") busy(b, async () => { let ok = 0, err = [];
-        for (let i=0;i<ids.length;i+=8){ const d = await api("packlink-drafts", { ids: ids.slice(i,i+8) }); ok += d.done.length; err.push(...d.errors); }
+        for (let i=0;i<ids.length;i+=4){ const d = await api("packlink-drafts", { ids: ids.slice(i,i+4) }); ok += d.done.length; err.push(...d.errors); }
         err.length ? toast(`${ok} brouillon(s) créé(s), ${err.length} erreur(s) : ${err[0].error}`, true) : toast(`${ok} envoi(s) dans ton panier Packlink, à payer sur packlink.fr`); });
     }
   });
