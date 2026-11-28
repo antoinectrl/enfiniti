@@ -41,8 +41,8 @@ exports.handler = async (event) => {
       case "settings": {   // page Réglages : voir ce qui est branché / enregistrer une clé
         const KEYS = ["BREVO_API_KEY", "MAIL_FROM", "SENDCLOUD_PUBLIC_KEY", "SENDCLOUD_SECRET_KEY", "GMAIL_SCRIPT_URL",
           "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR", "STRIPE_LIVE_KEY",
-          "PACKLINK_API_KEY", "SHIP_FROM_NAME", "SHIP_FROM_STREET", "SHIP_FROM_ZIP", "SHIP_FROM_CITY", "SHIP_FROM_PHONE"];
-        const PUBLIC = ["MAIL_FROM", "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR", "SHIP_FROM_NAME", "SHIP_FROM_STREET", "SHIP_FROM_ZIP", "SHIP_FROM_CITY", "SHIP_FROM_PHONE"];
+          "PACKLINK_API_KEY", "SHIP_FROM_NAME", "SHIP_FROM_STREET", "SHIP_FROM_ZIP", "SHIP_FROM_CITY", "SHIP_FROM_PHONE", "SHIP_FROM_COMPANY", "RETURN_ADDRESS"];
+        const PUBLIC = ["MAIL_FROM", "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR", "SHIP_FROM_NAME", "SHIP_FROM_STREET", "SHIP_FROM_ZIP", "SHIP_FROM_CITY", "SHIP_FROM_PHONE", "SHIP_FROM_COMPANY", "RETURN_ADDRESS"];
         const save = async (k, v) => {
           if (v) await db.prepare("INSERT INTO settings (k, v, updated) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, updated = excluded.updated").bind(k, v, Date.now()).run();
           else await db.prepare("DELETE FROM settings WHERE k = ?").bind(k).run();
