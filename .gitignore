@@ -8,3 +8,4 @@ dist-worker/
 tools/assets.gen.mjs
 tools/google-mail.gs
 stories/
+expeditions/
