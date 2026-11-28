@@ -149,6 +149,15 @@ exports.handler = async (event) => {
         return json(200, { done, errors });
       }
 
+      case "packlink-delete": {   // supprime un brouillon Packlink et libère la commande
+        const m = (await stripe(`checkout/sessions/${encodeURIComponent(body.id)}`)).metadata || {};
+        if (!m.packlink_ref) return json(400, { error: "Pas de brouillon Packlink pour cette commande" });
+        let deleted = true, info = "";
+        try { await require("../../lib/packlink.js").remove(m.packlink_ref); } catch (e) { deleted = false; info = e.message; }
+        await O.setMeta(body.id, { packlink_ref: "" });
+        return json(200, { reference: m.packlink_ref, deleted, info });
+      }
+
       case "mail-info": {  // nombre d'inscrits + envois Google restants aujourd'hui
         const subs = await O.subscribers();
         let quota = null; try { quota = await O.mailQuota(); } catch (e) {}
