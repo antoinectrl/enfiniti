@@ -202,6 +202,7 @@ tr.row.sel td{background:#f6f8ff}
       <div class="bulk" id="bulk" hidden>
         <b id="bulk-n"></b>
         <button class="btn dark" data-bulk="label" type="button">Créer les étiquettes</button>
+        <button class="btn" data-bulk="packlink" type="button">Brouillons Packlink</button>
         <button class="btn" data-bulk="print" type="button">Imprimer les étiquettes</button>
         <button class="btn" data-bulk="pick" type="button">Liste de préparation</button>
         <button class="btn" data-bulk="ship" type="button">Marquer expédiées + e-mail</button>
@@ -239,6 +240,16 @@ tr.row.sel td{background:#f6f8ff}
       <label class="sub" for="LEGAL_SIRET">SIRET</label><input class="search" style="width:100%" id="LEGAL_SIRET" inputmode="numeric">
       <label class="sub" for="LEGAL_ADDRESS">Adresse postale</label><input class="search" style="width:100%" id="LEGAL_ADDRESS">
       <label class="sub" for="LEGAL_MEDIATOR">Médiateur de la consommation (nom et site)</label><input class="search" style="width:100%" id="LEGAL_MEDIATOR" placeholder="ex. CM2C, www.cm2c.net">
+    </section>
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>Étiquettes · Packlink</b><span class="pill" id="st-packlink"></span></div>
+      <div class="sub">Packlink PRO → Paramètres → Intégrations → <b>Clé API</b>. Les envois sont créés en brouillon : tu paies et imprimes dans ton panier Packlink.</div>
+      <label class="sub" for="PACKLINK_API_KEY">Clé API Packlink</label><input class="search" style="width:100%" id="PACKLINK_API_KEY" autocomplete="off">
+      <label class="sub" for="SHIP_FROM_NAME">Expéditeur : prénom et nom</label><input class="search" style="width:100%" id="SHIP_FROM_NAME">
+      <label class="sub" for="SHIP_FROM_STREET">Adresse d'expédition (numéro et rue)</label><input class="search" style="width:100%" id="SHIP_FROM_STREET">
+      <div style="display:flex;gap:8px"><div style="flex:1"><label class="sub" for="SHIP_FROM_ZIP">Code postal</label><input class="search" style="width:100%" id="SHIP_FROM_ZIP" inputmode="numeric"></div>
+      <div style="flex:2"><label class="sub" for="SHIP_FROM_CITY">Ville</label><input class="search" style="width:100%" id="SHIP_FROM_CITY"></div></div>
+      <label class="sub" for="SHIP_FROM_PHONE">Téléphone expéditeur</label><input class="search" style="width:100%" id="SHIP_FROM_PHONE" inputmode="tel" placeholder="0788088387">
     </section>
     <section style="display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:10px">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>Paiement réel (Stripe live)</b><span class="pill" id="st-stripe"></span></div>
@@ -395,6 +406,9 @@ tr.row.sel td{background:#f6f8ff}
       if (b.dataset.bulk==="print") busy(b, () => printLabels(orders.filter(o=>sel.has(o.id) && o.parcel_id).map(o=>o.parcel_id)));
       if (b.dataset.bulk==="ship") busy(b, async () => { for (let i=0;i<ids.length;i+=10) await ship(ids.slice(i,i+10)); });
       if (b.dataset.bulk==="pick") pickList(picked);
+      if (b.dataset.bulk==="packlink") busy(b, async () => { let ok = 0, err = [];
+        for (let i=0;i<ids.length;i+=8){ const d = await api("packlink-drafts", { ids: ids.slice(i,i+8) }); ok += d.done.length; err.push(...d.errors); }
+        err.length ? toast(`${ok} brouillon(s) créé(s), ${err.length} erreur(s) : ${err[0].error}`, true) : toast(`${ok} envoi(s) dans ton panier Packlink, à payer sur packlink.fr`); });
     }
   });
   function pickList(list){
@@ -415,13 +429,14 @@ tr.row.sel td{background:#f6f8ff}
   };
 
   /* ---------- réglages ---------- */
-  const SKEYS = ["BREVO_API_KEY","MAIL_FROM","SENDCLOUD_PUBLIC_KEY","SENDCLOUD_SECRET_KEY","GMAIL_SCRIPT_URL","INSTAGRAM_URL","CONTACT_EMAIL","LEGAL_NAME","LEGAL_SIRET","LEGAL_ADDRESS","LEGAL_MEDIATOR","STRIPE_LIVE_KEY"];
-  const PUBLIC_KEYS = ["MAIL_FROM","INSTAGRAM_URL","CONTACT_EMAIL","LEGAL_NAME","LEGAL_SIRET","LEGAL_ADDRESS","LEGAL_MEDIATOR"];
+  const SKEYS = ["BREVO_API_KEY","MAIL_FROM","SENDCLOUD_PUBLIC_KEY","SENDCLOUD_SECRET_KEY","GMAIL_SCRIPT_URL","INSTAGRAM_URL","CONTACT_EMAIL","LEGAL_NAME","LEGAL_SIRET","LEGAL_ADDRESS","LEGAL_MEDIATOR","STRIPE_LIVE_KEY","PACKLINK_API_KEY","SHIP_FROM_NAME","SHIP_FROM_STREET","SHIP_FROM_ZIP","SHIP_FROM_CITY","SHIP_FROM_PHONE"];
+  const PUBLIC_KEYS = ["MAIL_FROM","INSTAGRAM_URL","CONTACT_EMAIL","LEGAL_NAME","LEGAL_SIRET","LEGAL_ADDRESS","LEGAL_MEDIATOR","SHIP_FROM_NAME","SHIP_FROM_STREET","SHIP_FROM_ZIP","SHIP_FROM_CITY","SHIP_FROM_PHONE"];
   function showSettings(d){
     SKEYS.forEach(k => { const el = $("#"+k); if (PUBLIC_KEYS.includes(k)) { el.value = d.filled[k] || ""; } else { el.value = ""; el.placeholder = d.filled[k] ? "Enregistrée : " + d.filled[k] : "Non renseignée"; } });
     const pill = (id, c, label) => { const el = $(id); if (!c){ el.className = "pill s-annulee"; el.textContent = label || "Non connecté"; } else { el.className = "pill " + (c.ok ? "s-expediee" : "s-a_preparer"); el.textContent = c.info; } };
     pill("#st-brevo", d.checks.brevo || (d.checks.google ? { ok:true, info:"Envoi via Gmail" } : null));
     pill("#st-sendcloud", d.checks.sendcloud);
+    pill("#st-packlink", d.checks.packlink);
     const sp = $("#st-stripe"); sp.className = "pill " + (d.checks.stripe && d.checks.stripe.live ? "s-expediee" : "s-a_preparer"); sp.textContent = d.checks.stripe ? d.checks.stripe.info : "";
   }
   $("#open-settings").onclick = async () => { $("#settings").hidden = false; try{ showSettings(await api("settings", {})); }catch(e){ toast(e.message,true); } };

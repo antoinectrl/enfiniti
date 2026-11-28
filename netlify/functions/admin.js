@@ -40,8 +40,9 @@ exports.handler = async (event) => {
 
       case "settings": {   // page Réglages : voir ce qui est branché / enregistrer une clé
         const KEYS = ["BREVO_API_KEY", "MAIL_FROM", "SENDCLOUD_PUBLIC_KEY", "SENDCLOUD_SECRET_KEY", "GMAIL_SCRIPT_URL",
-          "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR", "STRIPE_LIVE_KEY"];
-        const PUBLIC = ["MAIL_FROM", "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR"];
+          "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR", "STRIPE_LIVE_KEY",
+          "PACKLINK_API_KEY", "SHIP_FROM_NAME", "SHIP_FROM_STREET", "SHIP_FROM_ZIP", "SHIP_FROM_CITY", "SHIP_FROM_PHONE"];
+        const PUBLIC = ["MAIL_FROM", "INSTAGRAM_URL", "CONTACT_EMAIL", "LEGAL_NAME", "LEGAL_SIRET", "LEGAL_ADDRESS", "LEGAL_MEDIATOR", "SHIP_FROM_NAME", "SHIP_FROM_STREET", "SHIP_FROM_ZIP", "SHIP_FROM_CITY", "SHIP_FROM_PHONE"];
         const save = async (k, v) => {
           if (v) await db.prepare("INSERT INTO settings (k, v, updated) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, updated = excluded.updated").bind(k, v, Date.now()).run();
           else await db.prepare("DELETE FROM settings WHERE k = ?").bind(k).run();
@@ -89,6 +90,10 @@ exports.handler = async (event) => {
         if (process.env.GMAIL_SCRIPT_URL) {
           try { checks.google = { ok: true, info: (await O.mailQuota()) + " envois possibles aujourd'hui" }; } catch (e) { checks.google = { ok: false, info: e.message }; }
         }
+        if (process.env.PACKLINK_API_KEY) {
+          try { const t = await require("../../lib/packlink.js").test(); checks.packlink = { ok: true, info: "Connecté · ex. " + t.exemple }; }
+          catch (e) { checks.packlink = { ok: false, info: e.message.slice(0, 160) }; }
+        }
         checks.stripe = { ok: true, live: IS_LIVE(), info: IS_LIVE() ? "Paiement réel actif" : "Mode test (aucun vrai paiement)" };
         const filled = Object.fromEntries(KEYS.map(k => [k, process.env[k] ? (PUBLIC.includes(k) ? process.env[k] : "•••• " + process.env[k].slice(-4)) : ""]));
         return json(200, { filled, checks });
@@ -125,6 +130,23 @@ exports.handler = async (event) => {
           if (!ex.data.length) { await stripe("customers", { method: "POST", body: { email, metadata: { source: "liste-black-friday" } } }); added++; }
         }
         return json(200, { added, seen: emails.length });
+      }
+
+      case "packlink-drafts": {   // crée les envois Packlink en brouillon (panier non payé)
+        const PL = require("../../lib/packlink.js");
+        const ids = (body.ids || []).slice(0, 8), done = [], errors = [];
+        for (const id of ids) {
+          try {
+            const o = await O.getOrder(id);
+            if (!o.paid || o.released) throw new Error("commande non payée ou annulée");
+            const m = (await stripe(`checkout/sessions/${encodeURIComponent(id)}`)).metadata || {};
+            if (m.packlink_ref) { done.push({ id, number: o.number, reference: m.packlink_ref, already: true }); continue; }
+            const r = await PL.draft(o);
+            await O.setMeta(id, { packlink_ref: String(r.reference).slice(0, 100) });
+            done.push({ id, number: o.number, ...r });
+          } catch (e) { errors.push({ id, error: e.message }); }
+        }
+        return json(200, { done, errors });
       }
 
       case "mail-info": {  // nombre d'inscrits + envois Google restants aujourd'hui
